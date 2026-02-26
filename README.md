@@ -34,7 +34,7 @@ Copy `.env.example` to `.env` and fill in your Harness credentials:
 cp .env.example .env
 ```
 
-At minimum, set `HARNESS_API_KEY` and `HARNESS_ACCOUNT_ID`.
+At minimum, set `HARNESS_API_KEY`. The account ID is auto-extracted from PAT tokens (`pat.<accountId>.<tokenId>.<secret>`), so `HARNESS_ACCOUNT_ID` is only needed for non-PAT tokens.
 
 ### Run
 
@@ -101,7 +101,6 @@ curl -X POST http://localhost:3000/mcp \
       "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
-        "HARNESS_ACCOUNT_ID": "your-account-id",
         "HARNESS_DEFAULT_ORG_ID": "default",
         "HARNESS_DEFAULT_PROJECT_ID": "your-project"
       }
@@ -120,7 +119,6 @@ curl -X POST http://localhost:3000/mcp \
       "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
-        "HARNESS_ACCOUNT_ID": "your-account-id",
         "HARNESS_DEFAULT_ORG_ID": "default",
         "HARNESS_DEFAULT_PROJECT_ID": "your-project"
       }
@@ -139,7 +137,6 @@ curl -X POST http://localhost:3000/mcp \
       "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
-        "HARNESS_ACCOUNT_ID": "your-account-id",
         "HARNESS_DEFAULT_ORG_ID": "default",
         "HARNESS_DEFAULT_PROJECT_ID": "your-project"
       }
@@ -153,7 +150,7 @@ curl -X POST http://localhost:3000/mcp \
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `HARNESS_API_KEY` | Yes | -- | Harness personal access token or service account token |
-| `HARNESS_ACCOUNT_ID` | Yes | -- | Harness account identifier |
+| `HARNESS_ACCOUNT_ID` | No | *(from PAT)* | Harness account identifier. Auto-extracted from PAT tokens; only needed for non-PAT API keys |
 | `HARNESS_BASE_URL` | No | `https://app.harness.io` | Base URL (override for self-managed Harness) |
 | `HARNESS_DEFAULT_ORG_ID` | No | `default` | Default organization identifier |
 | `HARNESS_DEFAULT_PROJECT_ID` | No | -- | Default project identifier |
