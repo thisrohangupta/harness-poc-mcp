@@ -27,7 +27,8 @@ export type ToolsetName =
   | "sei"
   | "scs"
   | "sto"
-  | "access_control";
+  | "access_control"
+  | "settings";
 
 export type OperationName = "list" | "get" | "create" | "update" | "delete";
 

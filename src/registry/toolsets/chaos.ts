@@ -117,13 +117,44 @@ export const chaosToolset: ToolsetDefinition = {
       },
     },
     {
+      resourceType: "chaos_experiment_variable",
+      displayName: "Chaos Experiment Variable",
+      description: "Variables for a chaos experiment. Supports list.",
+      toolset: "chaos",
+      scope: "project",
+      identifierFields: ["experiment_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/chaos/experiments/{experimentId}",
+      operations: {
+        list: {
+          method: "GET",
+          path: "/chaos/manager/api/experiments/{experimentId}/variables",
+          pathParams: { experiment_id: "experimentId" },
+          responseExtractor: passthrough,
+          description: "List variables for a chaos experiment",
+        },
+      },
+    },
+    {
       resourceType: "chaos_experiment_run",
       displayName: "Chaos Experiment Run",
-      description: "Result of a chaos experiment run. Supports get.",
+      description: "Result of a chaos experiment run. Supports list and get.",
       toolset: "chaos",
       scope: "project",
       identifierFields: ["experiment_id", "run_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/chaos/experiments/{experimentId}",
       operations: {
+        list: {
+          method: "POST",
+          path: "/chaos/manager/api/experiments/{experimentId}/runs",
+          pathParams: { experiment_id: "experimentId" },
+          queryParams: {
+            page: "page",
+            limit: "limit",
+          },
+          bodyBuilder: () => ({}),
+          responseExtractor: passthrough,
+          description: "List runs for a chaos experiment",
+        },
         get: {
           method: "GET",
           path: "/chaos/manager/api/experiments/{experimentId}/runs/{runId}",

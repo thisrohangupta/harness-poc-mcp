@@ -131,6 +131,45 @@ export const scsToolset: ToolsetDefinition = {
       },
     },
     {
+      resourceType: "scs_artifact_remediation",
+      displayName: "SCS Artifact Remediation",
+      description: "Remediation details for a specific component within an artifact. Supports get.",
+      toolset: "scs",
+      scope: "project",
+      identifierFields: ["artifact_id", "component_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/supply-chain/artifacts/{artifactId}",
+      operations: {
+        get: {
+          method: "GET",
+          path: "/ssca/api/v2/artifacts/{artifactId}/components/{componentId}/remediation",
+          pathParams: {
+            artifact_id: "artifactId",
+            component_id: "componentId",
+          },
+          responseExtractor: passthrough,
+          description: "Get remediation details for an artifact component",
+        },
+      },
+    },
+    {
+      resourceType: "scs_chain_of_custody",
+      displayName: "SCS Chain of Custody",
+      description: "Chain of custody for an artifact. Supports get.",
+      toolset: "scs",
+      scope: "project",
+      identifierFields: ["artifact_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/supply-chain/artifacts/{artifactId}",
+      operations: {
+        get: {
+          method: "GET",
+          path: "/ssca/api/v2/artifacts/{artifactId}/chain-of-custody",
+          pathParams: { artifact_id: "artifactId" },
+          responseExtractor: passthrough,
+          description: "Get chain of custody for an artifact",
+        },
+      },
+    },
+    {
       resourceType: "scs_opa_policy",
       displayName: "SCS OPA Policy",
       description: "OPA policy for supply chain governance. Supports create.",
