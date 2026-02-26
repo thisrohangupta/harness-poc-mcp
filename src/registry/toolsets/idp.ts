@@ -26,6 +26,7 @@ export const idpToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: ["entity_id"],
       listFilterFields: ["kind", "search"],
+      deepLinkTemplate: "/ng/account/{accountId}/idp/catalog",
       operations: {
         list: {
           method: "GET",
@@ -55,6 +56,7 @@ export const idpToolset: ToolsetDefinition = {
       toolset: "idp",
       scope: "account",
       identifierFields: ["scorecard_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/idp/scorecards/{scorecardIdentifier}",
       operations: {
         list: {
           method: "GET",

@@ -49,6 +49,7 @@ export const featureFlagsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["flag_id"],
       listFilterFields: ["name", "environment"],
+      deepLinkTemplate: "/ng/account/{accountId}/cf/orgs/{orgIdentifier}/projects/{projectIdentifier}/feature-flags/{flagIdentifier}",
       operations: {
         list: {
           method: "GET",

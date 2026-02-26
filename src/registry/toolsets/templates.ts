@@ -26,6 +26,7 @@ export const templatesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["template_id"],
       listFilterFields: ["search_term", "template_type"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/setup/resources/templates",
       operations: {
         list: {
           method: "POST",

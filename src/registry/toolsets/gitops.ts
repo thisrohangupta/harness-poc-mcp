@@ -17,6 +17,7 @@ export const gitopsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["agent_id"],
       listFilterFields: ["search_term", "type"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/agents/{agentIdentifier}",
       operations: {
         list: {
           method: "GET",
@@ -48,6 +49,7 @@ export const gitopsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["agent_id", "app_name"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/applications/{appName}",
       operations: {
         list: {
           method: "GET",
@@ -93,6 +95,7 @@ export const gitopsToolset: ToolsetDefinition = {
       toolset: "gitops",
       scope: "project",
       identifierFields: ["agent_id", "cluster_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/clusters",
       operations: {
         list: {
           method: "GET",

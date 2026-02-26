@@ -36,7 +36,7 @@ async function main(): Promise<void> {
   });
 
   // Register all tools, resources, and prompts
-  registerAllTools(server, registry, client);
+  registerAllTools(server, registry, client, config);
   registerAllResources(server, registry, client, config);
   registerAllPrompts(server);
 
