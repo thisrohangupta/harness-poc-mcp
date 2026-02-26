@@ -296,6 +296,42 @@ export class Registry {
     };
   }
 
+  /** Search resource types by keyword — matches type, display name, toolset, description. */
+  searchResources(query: string): Array<{ type: string; name: string; toolset: string; ops: string[]; description: string }> {
+    const q = query.toLowerCase();
+    const results: Array<{ type: string; name: string; toolset: string; ops: string[]; description: string; score: number }> = [];
+
+    for (const def of this.resourceMap.values()) {
+      let score = 0;
+      const toolsetName = this.toolsets.find((t) => t.resources.includes(def))?.name ?? "";
+
+      if (def.resourceType.toLowerCase() === q) score = 100;
+      else if (def.resourceType.toLowerCase().includes(q)) score = 80;
+      else if (def.displayName.toLowerCase().includes(q)) score = 60;
+      else if (toolsetName.toLowerCase().includes(q)) score = 40;
+      else if (def.description.toLowerCase().includes(q)) score = 20;
+
+      if (score > 0) {
+        const ops = [
+          ...Object.keys(def.operations),
+          ...Object.keys(def.executeActions ?? {}),
+        ];
+        results.push({
+          type: def.resourceType,
+          name: def.displayName,
+          toolset: toolsetName,
+          ops,
+          description: def.description,
+          score,
+        });
+      }
+    }
+
+    return results
+      .sort((a, b) => b.score - a.score)
+      .map(({ score, ...rest }) => rest);
+  }
+
   /** Get compact summary — one line per resource type, ~30 tokens each. */
   describeSummary(): Record<string, unknown> {
     const resource_types = [];
