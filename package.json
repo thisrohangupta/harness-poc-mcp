@@ -19,6 +19,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "docker:build": "docker build -t harness-mcp-server .",
+    "docker:run": "docker run --rm -p 3000:3000 --env-file .env harness-mcp-server",
     "prepublishOnly": "pnpm build"
   },
   "keywords": [
