@@ -145,6 +145,47 @@ curl -X POST http://localhost:3000/mcp \
 }
 ```
 
+### Docker
+
+Build and run the server as a Docker container:
+
+```bash
+# Build the image
+pnpm docker:build
+
+# Run with your .env file
+pnpm docker:run
+
+# Or run directly with env vars
+docker run --rm -p 3000:3000 \
+  -e HARNESS_API_KEY=pat.xxx.xxx.xxx \
+  -e HARNESS_ACCOUNT_ID=your-account-id \
+  harness-mcp-server
+```
+
+The container runs in HTTP mode on port 3000 by default with a built-in health check.
+
+### Kubernetes
+
+Deploy to a Kubernetes cluster using the provided manifests:
+
+```bash
+# 1. Edit the Secret with your real credentials
+#    k8s/secret.yaml — replace HARNESS_API_KEY and HARNESS_ACCOUNT_ID
+
+# 2. Apply all manifests
+kubectl apply -f k8s/
+
+# 3. Verify the deployment
+kubectl -n harness-mcp get pods
+
+# 4. Port-forward for local testing
+kubectl -n harness-mcp port-forward svc/harness-mcp-server 3000:80
+curl http://localhost:3000/health
+```
+
+The deployment runs 2 replicas with readiness/liveness probes, resource limits, and non-root security context. The Service exposes port 80 internally (targeting container port 3000).
+
 ## Configuration
 
 | Variable | Required | Default | Description |
