@@ -37,19 +37,18 @@ export function registerDescribeTool(server: McpServer, registry: Registry): voi
               : undefined,
           });
         } catch (err) {
-          // Resource type not found — return the full describe with an error hint
-          const describe = registry.describe();
+          // Resource type not found — return the compact summary with an error hint
+          const summary = registry.describeSummary();
           return jsonResult({
             error: err instanceof Error ? err.message : String(err),
-            ...describe,
+            ...summary,
           });
         }
       }
 
-      const describe = registry.describe();
-
-      // Filter by toolset if specified
+      // Filter by toolset if specified — use full detail
       if (args.toolset) {
+        const describe = registry.describe();
         const toolsets = describe.toolsets as Record<string, unknown>;
         const filtered = toolsets[args.toolset];
         if (!filtered) {
@@ -61,7 +60,8 @@ export function registerDescribeTool(server: McpServer, registry: Registry): voi
         return jsonResult({ toolset: args.toolset, ...filtered as object });
       }
 
-      return jsonResult(describe);
+      // No-args: return compact summary (~30 tokens per resource type)
+      return jsonResult(registry.describeSummary());
     },
   );
 }

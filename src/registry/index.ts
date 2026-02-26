@@ -207,17 +207,16 @@ export class Registry {
 
     // Attach deep link if available
     if (def.deepLinkTemplate && typeof result === "object" && result !== null) {
-      const linkParams: Record<string, string> = {
+      const baseLinkParams: Record<string, string> = {
         orgIdentifier: (params.orgIdentifier as string) ?? "",
         projectIdentifier: (params.projectIdentifier as string) ?? "",
       };
-      // Add identifier fields
+      // Add identifier fields from input (for get/update/delete single-item operations)
       for (const field of def.identifierFields) {
         const value = input[field];
         if (value) {
-          // Map input field name to the path param name used in deep link template
           const pathParamName = spec.pathParams?.[field] ?? field;
-          linkParams[pathParamName] = String(value);
+          baseLinkParams[pathParamName] = String(value);
         }
       }
       try {
@@ -225,17 +224,51 @@ export class Registry {
           this.config.HARNESS_BASE_URL,
           this.config.HARNESS_ACCOUNT_ID,
           def.deepLinkTemplate,
-          linkParams,
+          baseLinkParams,
         );
       } catch {
         // Deep link construction failed — non-critical
+      }
+
+      // Attach per-item deep links for list results
+      const r = result as { items?: unknown[] };
+      if (r.items && Array.isArray(r.items)) {
+        for (const item of r.items) {
+          if (typeof item !== "object" || item === null) continue;
+          try {
+            const itemRecord = item as Record<string, unknown>;
+            const itemLinkParams: Record<string, string> = { ...baseLinkParams };
+
+            // Resolve identifier fields from each item
+            for (const field of def.identifierFields) {
+              // Get the API-side param name (e.g., pipeline_id -> pipelineIdentifier)
+              const pathParamName = spec.pathParams?.[field] ?? field;
+              // Look for the API param name directly in the item (e.g., pipelineIdentifier, planExecutionId)
+              if (itemRecord[pathParamName] !== undefined) {
+                itemLinkParams[pathParamName] = String(itemRecord[pathParamName]);
+              } else if (itemRecord.identifier !== undefined) {
+                // Fall back to the generic "identifier" field for the primary identifier
+                itemLinkParams[pathParamName] = String(itemRecord.identifier);
+              }
+            }
+
+            itemRecord._deepLink = buildDeepLink(
+              this.config.HARNESS_BASE_URL,
+              this.config.HARNESS_ACCOUNT_ID,
+              def.deepLinkTemplate,
+              itemLinkParams,
+            );
+          } catch {
+            // Per-item deep link failed — non-critical, skip
+          }
+        }
       }
     }
 
     return result;
   }
 
-  /** Get describe metadata for all enabled resource types. */
+  /** Get describe metadata for all enabled resource types (full detail). */
   describe(): Record<string, unknown> {
     const toolsets: Record<string, unknown> = {};
     for (const ts of this.toolsets) {
@@ -258,6 +291,31 @@ export class Registry {
       total_resource_types: this.resourceMap.size,
       total_toolsets: this.toolsets.length,
       toolsets,
+    };
+  }
+
+  /** Get compact summary — one line per resource type, ~30 tokens each. */
+  describeSummary(): Record<string, unknown> {
+    const resource_types = [];
+    for (const ts of this.toolsets) {
+      for (const r of ts.resources) {
+        const ops = Object.keys(r.operations);
+        if (r.executeActions) {
+          ops.push(...Object.keys(r.executeActions));
+        }
+        resource_types.push({
+          type: r.resourceType,
+          name: r.displayName,
+          toolset: ts.name,
+          ops,
+        });
+      }
+    }
+    return {
+      total_resource_types: this.resourceMap.size,
+      total_toolsets: this.toolsets.length,
+      resource_types,
+      hint: "Call harness_describe with resource_type='<type>' for full details, or toolset='<name>' for a toolset overview.",
     };
   }
 }

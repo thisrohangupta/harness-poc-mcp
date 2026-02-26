@@ -1,0 +1,55 @@
+/**
+ * Compact item utility — strips verbose metadata from list results,
+ * keeping only fields that are actionable for an LLM.
+ */
+
+/** Timestamp-like key pattern: createdAt, lastModifiedTs, startTime, updatedDate, etc. */
+const TIMESTAMP_PATTERN = /(?:At|Ts|Time|Date)$/;
+
+/** Fields to always keep when compacting list items. */
+const IDENTITY_FIELDS = new Set([
+  "identifier", "name", "displayName", "description", "slug",
+]);
+
+const STATUS_FIELDS = new Set([
+  "status", "state", "enabled", "health",
+]);
+
+const TYPE_FIELDS = new Set([
+  "type", "kind", "category", "module",
+]);
+
+const OWNERSHIP_FIELDS = new Set([
+  "tags", "labels", "owner",
+]);
+
+const ALWAYS_KEEP = new Set(["_deepLink"]);
+
+function isWhitelistedKey(key: string): boolean {
+  return (
+    IDENTITY_FIELDS.has(key) ||
+    STATUS_FIELDS.has(key) ||
+    TYPE_FIELDS.has(key) ||
+    OWNERSHIP_FIELDS.has(key) ||
+    ALWAYS_KEEP.has(key) ||
+    TIMESTAMP_PATTERN.test(key)
+  );
+}
+
+/**
+ * Strip verbose fields from an array of list items.
+ * Keeps identity, status, type, ownership, timestamp, and deep link fields.
+ */
+export function compactItems(items: unknown[]): unknown[] {
+  return items.map((item) => {
+    if (typeof item !== "object" || item === null) return item;
+    const full = item as Record<string, unknown>;
+    const slim: Record<string, unknown> = {};
+    for (const key of Object.keys(full)) {
+      if (isWhitelistedKey(key)) {
+        slim[key] = full[key];
+      }
+    }
+    return slim;
+  });
+}
