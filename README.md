@@ -1,6 +1,6 @@
 # Harness MCP Server
 
-An MCP (Model Context Protocol) server that gives AI agents full access to the Harness.io platform through 10 consolidated tools and 68+ resource types.
+An MCP (Model Context Protocol) server that gives AI agents full access to the Harness.io platform through 10 consolidated tools and 110+ resource types.
 
 [![CI](https://github.com/thisrohangupta/harness-poc-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thisrohangupta/harness-poc-mcp/actions/workflows/ci.yml)
 
@@ -8,7 +8,7 @@ An MCP (Model Context Protocol) server that gives AI agents full access to the H
 
 The naive approach to building an MCP server for a platform like Harness is 1:1 API-to-tool mapping: one tool per endpoint. That path leads to 240+ tools, which is an anti-pattern — LLMs degrade at tool selection when the tool count is high, context windows fill with schema definitions, and every new API endpoint requires a new tool.
 
-This server takes a different approach: **registry-based dispatch**. Instead of hundreds of individual tools, there are 10 generic tools that operate on any of 68+ resource types. Adding a new Harness resource means adding a declarative data file — no new tool registration, no schema changes, no prompt updates.
+This server takes a different approach: **registry-based dispatch**. Instead of hundreds of individual tools, there are 10 generic tools that operate on any of 110+ resource types. Adding a new Harness resource means adding a declarative data file — no new tool registration, no schema changes, no prompt updates.
 
 ## Quick Start
 
@@ -303,7 +303,7 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 
 ## Resource Types
 
-68+ resource types organized across 23 toolsets. Each resource type supports a subset of CRUD operations and optional execute actions.
+110+ resource types organized across 24 toolsets. Each resource type supports a subset of CRUD operations and optional execute actions.
 
 ### Pipelines
 
@@ -312,6 +312,7 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 | `pipeline` | x | x | x | x | x | `run`, `retry` |
 | `execution` | x | x | | | | `interrupt` |
 | `trigger` | x | x | x | x | x | |
+| `pipeline_summary` | | x | | | | |
 | `input_set` | x | x | | | | |
 
 ### Services
@@ -324,19 +325,20 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `environment` | x | x | x | x | x | |
+| `environment` | x | x | x | x | x | `move_configs` |
 
 ### Connectors
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `connector` | x | x | x | x | x | `test_connection` |
+| `connector_catalogue` | x | | | | | |
 
 ### Infrastructure
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `infrastructure` | x | x | x | x | x | |
+| `infrastructure` | x | x | x | x | x | `move_configs` |
 
 ### Secrets
 
@@ -354,14 +356,14 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `audit_event` | x | | | | | |
+| `audit_event` | x | x | | | | |
 
 ### Delegates
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `delegate` | x | | | | | |
-| `delegate_token` | x | | | | | |
+| `delegate_token` | x | x | x | | x | `revoke`, `get_delegates` |
 
 ### Code Repositories
 
@@ -389,23 +391,26 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `dashboard` | x | x | | | | |
+| `dashboard_data` | | x | | | | |
 
 ### Internal Developer Portal (IDP)
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `idp_entity` | x | | | | | |
+| `idp_entity` | x | x | | | | |
 | `scorecard` | x | x | | | | |
-| `scorecard_check` | x | | | | | |
-| `idp_score` | x | | | | | |
-| `idp_workflow` | x | | | | | |
+| `scorecard_check` | x | x | | | | |
+| `scorecard_stats` | | x | | | | |
+| `scorecard_check_stats` | | x | | | | |
+| `idp_score` | x | x | | | | |
+| `idp_workflow` | x | | | | | `execute` |
 | `idp_tech_doc` | x | | | | | |
 
 ### Pull Requests
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `pull_request` | x | x | | | | |
+| `pull_request` | x | x | x | | | |
 | `pr_check` | x | | | | | |
 | `pr_activity` | x | | | | | |
 
@@ -423,10 +428,15 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `gitops_agent` | x | x | | | | |
 | `gitops_application` | x | x | | | | `sync` |
-| `gitops_cluster` | x | | | | | |
-| `gitops_repository` | x | | | | | |
-| `gitops_applicationset` | x | | | | | |
-| `gitops_repo_credential` | x | | | | | |
+| `gitops_cluster` | x | x | | | | |
+| `gitops_repository` | x | x | | | | |
+| `gitops_applicationset` | x | x | | | | |
+| `gitops_repo_credential` | x | x | | | | |
+| `gitops_app_event` | x | | | | | |
+| `gitops_pod_log` | | x | | | | |
+| `gitops_managed_resource` | x | | | | | |
+| `gitops_resource_action` | x | | | | | |
+| `gitops_dashboard` | | x | | | | |
 | `gitops_app_resource_tree` | | x | | | | |
 
 ### Chaos Engineering
@@ -434,11 +444,12 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `chaos_experiment` | x | x | | | | `run` |
-| `chaos_probe` | x | | | | | |
-| `chaos_experiment_template` | x | | | | | |
+| `chaos_probe` | x | x | | | | |
+| `chaos_experiment_template` | x | | | | | `create_from_template` |
 | `chaos_infrastructure` | x | | | | | |
-| `chaos_experiment_run` | x | | | | | |
-| `chaos_loadtest` | x | | | | | |
+| `chaos_experiment_variable` | x | | | | | |
+| `chaos_experiment_run` | x | x | | | | |
+| `chaos_loadtest` | x | x | x | | x | `run`, `stop` |
 
 ### Cloud Cost Management (CCM)
 
@@ -448,45 +459,82 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 | `cost_breakdown` | x | | | | | |
 | `cost_timeseries` | x | | | | | |
 | `cost_summary` | x | x | | | | |
-| `cost_recommendation` | x | x | | | | |
+| `cost_recommendation` | x | x | | | | `update_state`, `override_savings`, `create_jira_ticket`, `create_snow_ticket` |
 | `cost_anomaly` | x | | | | | |
 | `cost_category` | x | | | | | |
+| `cost_overview` | | x | | | | |
+| `cost_metadata` | | x | | | | |
+| `cost_filter_value` | x | | | | | |
+| `cost_recommendation_stats` | | x | | | | |
+| `cost_recommendation_by_type` | x | | | | | |
+| `cost_recommendation_detail` | | x | | | | |
+| `cost_ignored_anomaly` | x | | | | | |
+| `cost_commitment_coverage` | | x | | | | |
+| `cost_commitment_savings` | | x | | | | |
+| `cost_commitment_utilisation` | | x | | | | |
+| `cost_commitment_analysis` | | x | | | | |
+| `cost_estimated_savings` | | x | | | | |
 
 ### Software Engineering Insights (SEI)
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `sei_metric` | x | | | | | |
+| `sei_deployment_frequency` | | x | | | | |
+| `sei_deployment_frequency_drilldown` | | x | | | | |
+| `sei_change_failure_rate` | | x | | | | |
+| `sei_change_failure_rate_drilldown` | | x | | | | |
+| `sei_mttr` | | x | | | | |
+| `sei_lead_time` | | x | | | | |
+| `sei_team` | x | x | | | | |
+| `sei_team_integration` | x | | | | | |
+| `sei_team_developer` | x | | | | | |
+| `sei_org_tree` | x | x | | | | |
+| `sei_business_alignment` | x | x | | | | |
+| `sei_ai_usage` | | x | | | | |
+| `sei_ai_usage_breakdown` | x | | | | | |
+| `sei_ai_adoption` | | x | | | | |
+| `sei_ai_adoption_breakdown` | x | | | | | |
+| `sei_ai_impact` | | x | | | | |
+| `sei_ai_raw_metric` | x | | | | | |
 
 ### Software Supply Chain Assurance (SCS)
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `artifact_security` | x | | | | | |
-| `code_repo_security` | x | | | | | |
-| `scs_sbom` | x | | | | | |
+| `artifact_security` | x | x | | | | |
+| `code_repo_security` | x | x | | | | |
+| `scs_sbom` | | x | | | | |
 | `scs_artifact_component` | x | | | | | |
 | `scs_compliance_result` | x | | | | | |
-| `scs_opa_policy` | x | | | | | |
+| `scs_artifact_remediation` | | x | | | | |
+| `scs_chain_of_custody` | | x | | | | |
+| `scs_opa_policy` | | | x | | | |
 
 ### Security Testing Orchestration (STO)
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `security_issue` | x | x | | | | |
-| `security_exemption` | x | | | | | |
+| `security_exemption` | x | | | | | `approve`, `reject`, `promote` |
 
 ### Access Control
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `user` | x | | | | | |
-| `user_group` | x | x | | | | |
-| `service_account` | x | x | | | | |
-| `role` | x | x | | | | |
-| `role_assignment` | x | | | | | |
-| `resource_group` | x | x | | | | |
+| `user` | x | x | | | | |
+| `user_group` | x | x | x | | x | |
+| `service_account` | x | x | x | | x | |
+| `role` | x | x | x | | x | |
+| `role_assignment` | x | | x | | | |
+| `resource_group` | x | x | x | | x | |
 | `permission` | x | | | | | |
+
+### Settings
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `setting` | x | | | | | |
 
 ## MCP Prompts
 
@@ -511,7 +559,7 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 
 ## Toolset Filtering
 
-By default, all 23 toolsets (and their 68+ resource types) are enabled. Use `HARNESS_TOOLSETS` to expose only the toolsets you need. This reduces the resource types the LLM sees, improving tool selection accuracy.
+By default, all 24 toolsets (and their 110+ resource types) are enabled. Use `HARNESS_TOOLSETS` to expose only the toolsets you need. This reduces the resource types the LLM sees, improving tool selection accuracy.
 
 ```bash
 # Only expose pipelines, services, and connectors
@@ -522,10 +570,10 @@ Available toolset names:
 
 | Toolset | Resource Types |
 |---------|---------------|
-| `pipelines` | pipeline, execution, trigger, input_set |
+| `pipelines` | pipeline, execution, trigger, pipeline_summary, input_set |
 | `services` | service |
 | `environments` | environment |
-| `connectors` | connector |
+| `connectors` | connector, connector_catalogue |
 | `infrastructure` | infrastructure |
 | `secrets` | secret |
 | `logs` | execution_log |
@@ -534,17 +582,18 @@ Available toolset names:
 | `repositories` | repository |
 | `registries` | registry, artifact, artifact_version, artifact_file |
 | `templates` | template |
-| `dashboards` | dashboard |
-| `idp` | idp_entity, scorecard, scorecard_check, idp_score, idp_workflow, idp_tech_doc |
+| `dashboards` | dashboard, dashboard_data |
+| `idp` | idp_entity, scorecard, scorecard_check, scorecard_stats, scorecard_check_stats, idp_score, idp_workflow, idp_tech_doc |
 | `pull-requests` | pull_request, pr_check, pr_activity |
 | `feature-flags` | fme_workspace, fme_environment, feature_flag |
-| `gitops` | gitops_agent, gitops_application, gitops_cluster, gitops_repository, gitops_applicationset, gitops_repo_credential, gitops_app_resource_tree |
-| `chaos` | chaos_experiment, chaos_probe, chaos_experiment_template, chaos_infrastructure, chaos_experiment_run, chaos_loadtest |
-| `ccm` | cost_perspective, cost_breakdown, cost_timeseries, cost_summary, cost_recommendation, cost_anomaly, cost_category |
-| `sei` | sei_metric |
-| `scs` | artifact_security, code_repo_security, scs_sbom, scs_artifact_component, scs_compliance_result, scs_opa_policy |
+| `gitops` | gitops_agent, gitops_application, gitops_cluster, gitops_repository, gitops_applicationset, gitops_repo_credential, gitops_app_event, gitops_pod_log, gitops_managed_resource, gitops_resource_action, gitops_dashboard, gitops_app_resource_tree |
+| `chaos` | chaos_experiment, chaos_probe, chaos_experiment_template, chaos_infrastructure, chaos_experiment_variable, chaos_experiment_run, chaos_loadtest |
+| `ccm` | cost_perspective, cost_breakdown, cost_timeseries, cost_summary, cost_recommendation, cost_anomaly, cost_category, cost_overview, cost_metadata, cost_filter_value, cost_recommendation_stats, cost_recommendation_by_type, cost_recommendation_detail, cost_ignored_anomaly, cost_commitment_coverage, cost_commitment_savings, cost_commitment_utilisation, cost_commitment_analysis, cost_estimated_savings |
+| `sei` | sei_metric, sei_deployment_frequency, sei_deployment_frequency_drilldown, sei_change_failure_rate, sei_change_failure_rate_drilldown, sei_mttr, sei_lead_time, sei_team, sei_team_integration, sei_team_developer, sei_org_tree, sei_business_alignment, sei_ai_usage, sei_ai_usage_breakdown, sei_ai_adoption, sei_ai_adoption_breakdown, sei_ai_impact, sei_ai_raw_metric |
+| `scs` | artifact_security, code_repo_security, scs_sbom, scs_artifact_component, scs_compliance_result, scs_artifact_remediation, scs_chain_of_custody, scs_opa_policy |
 | `sto` | security_issue, security_exemption |
 | `access_control` | user, user_group, service_account, role, role_assignment, resource_group, permission |
+| `settings` | setting |
 
 ## Architecture
 
@@ -561,8 +610,8 @@ Available toolset names:
                           |
                  +--------v---------+
                  |    Registry       |  <-- Declarative resource definitions
-                 |  23 Toolsets      |      (data files, not code)
-                 |  68+ Resource Types|
+                 |  24 Toolsets      |      (data files, not code)
+                 |  110+ Resource Types|
                  +--------+---------+
                           |
                  +--------v---------+
