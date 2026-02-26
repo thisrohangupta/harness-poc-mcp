@@ -10,6 +10,7 @@ export function registerDescribeTool(server: McpServer, registry: Registry): voi
     {
       resource_type: z.string().describe("Get details for a specific resource type").optional(),
       toolset: z.string().describe("Filter to a specific toolset (e.g. pipelines, services)").optional(),
+      search_term: z.string().describe("Search for resource types by keyword (matches type name, display name, toolset, description)").optional(),
     },
     async (args) => {
       if (args.resource_type) {
@@ -44,6 +45,19 @@ export function registerDescribeTool(server: McpServer, registry: Registry): voi
             ...summary,
           });
         }
+      }
+
+      // Search by keyword
+      if (args.search_term) {
+        const results = registry.searchResources(args.search_term);
+        return jsonResult({
+          search_term: args.search_term,
+          total_results: results.length,
+          resource_types: results,
+          hint: results.length > 0
+            ? "Call harness_describe with resource_type='<type>' for full details on a specific match."
+            : "No matches found. Try a broader term, or call harness_describe with no arguments to see all resource types.",
+        });
       }
 
       // Filter by toolset if specified — use full detail

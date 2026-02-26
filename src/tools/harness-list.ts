@@ -9,7 +9,7 @@ import { compactItems } from "../utils/compact.js";
 export function registerListTool(server: McpServer, registry: Registry, client: HarnessClient): void {
   server.tool(
     "harness_list",
-    `List Harness resources by type with filtering and pagination. Available resource_types: ${registry.getAllResourceTypes().join(", ")}`,
+    "List Harness resources by type with filtering and pagination. Call harness_describe to discover available resource_types, or harness_describe with search_term to find specific ones.",
     {
       resource_type: z.string().describe("The type of resource to list (e.g. pipeline, service, environment, connector)"),
       org_id: z.string().describe("Organization identifier (overrides default)").optional(),

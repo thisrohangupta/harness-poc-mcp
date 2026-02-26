@@ -8,7 +8,7 @@ import { toMcpError } from "../utils/errors.js";
 export function registerGetTool(server: McpServer, registry: Registry, client: HarnessClient): void {
   server.tool(
     "harness_get",
-    `Get a specific Harness resource by ID. Available resource_types: ${registry.getAllResourceTypes().join(", ")}`,
+    "Get a specific Harness resource by ID. Call harness_describe to discover available resource_types, or harness_describe with search_term to find specific ones.",
     {
       resource_type: z.string().describe("The type of resource to get (e.g. pipeline, service, environment)"),
       resource_id: z.string().describe("The primary identifier of the resource"),
