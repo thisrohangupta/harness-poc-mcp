@@ -45,8 +45,48 @@ pnpm start
 # Or directly
 node build/index.js stdio
 
+# HTTP transport (for remote/shared deployment)
+pnpm start:http
+
+# Or with a custom port
+node build/index.js http --port 8080
+
 # Test with MCP Inspector
 pnpm inspect
+```
+
+### Zero-Install via npx
+
+Run without cloning or installing — just provide env vars:
+
+```bash
+# Stdio (default)
+HARNESS_API_KEY=pat.xxx HARNESS_ACCOUNT_ID=abc123 npx harness-poc-mcp-server
+
+# HTTP on port 8080
+HARNESS_API_KEY=pat.xxx HARNESS_ACCOUNT_ID=abc123 npx harness-poc-mcp-server http --port 8080
+```
+
+### HTTP Transport
+
+When running in HTTP mode, the server exposes:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/mcp` | `POST` | MCP JSON-RPC endpoint (stateless) |
+| `/mcp` | `OPTIONS` | CORS preflight |
+| `/health` | `GET` | Health check — returns `{ "status": "ok" }` |
+
+The HTTP transport runs in **stateless mode**: each POST request creates a fresh MCP session. This is ideal for serverless or shared deployments where persistent connections aren't practical.
+
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# MCP initialize request
+curl -X POST http://localhost:3000/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}'
 ```
 
 ### Client Configuration
@@ -472,7 +512,7 @@ Available toolset names:
                  |   AI Agent       |
                  |  (Claude, etc.)  |
                  +--------+---------+
-                          |  MCP (stdio)
+                          |  MCP (stdio or HTTP)
                  +--------v---------+
                  |    MCP Server     |
                  | 10 Generic Tools  |
@@ -612,6 +652,7 @@ src/
     security-review.ts
     onboard-service.ts
   utils/
+    cli.ts                          # CLI arg parsing (transport, port)
     errors.ts                       # Error normalization
     logger.ts                       # stderr-only logger
     rate-limiter.ts                 # Client-side rate limiting
