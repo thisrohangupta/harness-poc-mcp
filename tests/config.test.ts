@@ -1,9 +1,35 @@
 import { describe, it, expect } from "vitest";
-import { ConfigSchema } from "../src/config.js";
+import { ConfigSchema, loadConfig, extractAccountIdFromToken } from "../src/config.js";
+
+describe("extractAccountIdFromToken", () => {
+  it("extracts account ID from a valid PAT", () => {
+    expect(extractAccountIdFromToken("pat.acct123.tokenId.secret")).toBe("acct123");
+  });
+
+  it("extracts account ID from a PAT with extra dots in secret", () => {
+    expect(extractAccountIdFromToken("pat.acct123.tokenId.secret.extra")).toBe("acct123");
+  });
+
+  it("returns undefined for non-PAT tokens", () => {
+    expect(extractAccountIdFromToken("sat.acct123.tokenId.secret")).toBeUndefined();
+  });
+
+  it("returns undefined for tokens with too few segments", () => {
+    expect(extractAccountIdFromToken("pat.acct123")).toBeUndefined();
+  });
+
+  it("returns undefined for empty account ID segment", () => {
+    expect(extractAccountIdFromToken("pat..tokenId.secret")).toBeUndefined();
+  });
+
+  it("returns undefined for empty string", () => {
+    expect(extractAccountIdFromToken("")).toBeUndefined();
+  });
+});
 
 describe("ConfigSchema", () => {
   const validConfig = {
-    HARNESS_API_KEY: "pat.xxx.xxx.xxx",
+    HARNESS_API_KEY: "pat.acct123.tokenId.secret",
     HARNESS_ACCOUNT_ID: "acct123",
   };
 
@@ -33,9 +59,9 @@ describe("ConfigSchema", () => {
     expect(result.success).toBe(false);
   });
 
-  it("fails when HARNESS_ACCOUNT_ID is missing", () => {
-    const result = ConfigSchema.safeParse({ HARNESS_API_KEY: "pat.xxx" });
-    expect(result.success).toBe(false);
+  it("HARNESS_ACCOUNT_ID is optional in schema", () => {
+    const result = ConfigSchema.safeParse({ HARNESS_API_KEY: "pat.acct123.tok.sec" });
+    expect(result.success).toBe(true);
   });
 
   it("fails when HARNESS_API_KEY is empty", () => {
@@ -103,5 +129,51 @@ describe("ConfigSchema", () => {
     if (result.success) {
       expect(result.data.HARNESS_TOOLSETS).toBeUndefined();
     }
+  });
+});
+
+describe("loadConfig — account ID extraction", () => {
+  const originalEnv = process.env;
+
+  function withEnv(env: Record<string, string>, fn: () => void) {
+    const prev = { ...process.env };
+    // Clear all env vars and set only what's provided
+    for (const key of Object.keys(process.env)) {
+      delete process.env[key];
+    }
+    Object.assign(process.env, env);
+    try {
+      fn();
+    } finally {
+      for (const key of Object.keys(process.env)) {
+        delete process.env[key];
+      }
+      Object.assign(process.env, prev);
+    }
+  }
+
+  it("uses explicit HARNESS_ACCOUNT_ID when provided", () => {
+    withEnv(
+      { HARNESS_API_KEY: "pat.fromtoken.tok.sec", HARNESS_ACCOUNT_ID: "explicit" },
+      () => {
+        const config = loadConfig();
+        expect(config.HARNESS_ACCOUNT_ID).toBe("explicit");
+      },
+    );
+  });
+
+  it("extracts account ID from PAT when HARNESS_ACCOUNT_ID is not set", () => {
+    withEnv({ HARNESS_API_KEY: "pat.extracted123.tok.sec" }, () => {
+      const config = loadConfig();
+      expect(config.HARNESS_ACCOUNT_ID).toBe("extracted123");
+    });
+  });
+
+  it("throws when HARNESS_ACCOUNT_ID missing and API key is not a PAT", () => {
+    withEnv({ HARNESS_API_KEY: "sat.notapat.tok.sec" }, () => {
+      expect(() => loadConfig()).toThrow(
+        "HARNESS_ACCOUNT_ID is required when the API key is not a PAT",
+      );
+    });
   });
 });
