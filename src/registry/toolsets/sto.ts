@@ -43,7 +43,7 @@ export const stoToolset: ToolsetDefinition = {
     {
       resourceType: "security_exemption",
       displayName: "Security Exemption",
-      description: "Security issue exemption/waiver. Supports list.",
+      description: "Security issue exemption/waiver. Supports list with approve/reject actions.",
       toolset: "sto",
       scope: "project",
       identifierFields: ["exemption_id"],
@@ -57,6 +57,24 @@ export const stoToolset: ToolsetDefinition = {
           },
           responseExtractor: passthrough,
           description: "List security exemptions",
+        },
+      },
+      executeActions: {
+        approve: {
+          method: "POST",
+          path: "/sto/api/v2/exemptions/{exemptionId}/approve",
+          pathParams: { exemption_id: "exemptionId" },
+          bodyBuilder: () => ({}),
+          responseExtractor: passthrough,
+          actionDescription: "Approve (promote and approve) a security exemption",
+        },
+        reject: {
+          method: "POST",
+          path: "/sto/api/v2/exemptions/{exemptionId}/reject",
+          pathParams: { exemption_id: "exemptionId" },
+          bodyBuilder: () => ({}),
+          responseExtractor: passthrough,
+          actionDescription: "Reject a security exemption",
         },
       },
     },

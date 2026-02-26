@@ -13,10 +13,10 @@ export const auditToolset: ToolsetDefinition = {
     {
       resourceType: "audit_event",
       displayName: "Audit Event",
-      description: "Audit trail event. List-only — query platform activity history.",
+      description: "Audit trail event. Supports list and get (YAML diff).",
       toolset: "audit",
       scope: "account",
-      identifierFields: [],
+      identifierFields: ["audit_id"],
       listFilterFields: ["search_term", "module", "action"],
       operations: {
         list: {
@@ -30,6 +30,16 @@ export const auditToolset: ToolsetDefinition = {
           }),
           responseExtractor: pageExtract,
           description: "List audit events",
+        },
+        get: {
+          method: "GET",
+          path: "/audit/api/audits/{auditId}/yaml-diff",
+          pathParams: { audit_id: "auditId" },
+          responseExtractor: (raw: unknown) => {
+            const r = raw as { data?: unknown };
+            return r.data ?? raw;
+          },
+          description: "Get audit event YAML diff",
         },
       },
     },

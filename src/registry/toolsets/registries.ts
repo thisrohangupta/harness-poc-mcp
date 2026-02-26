@@ -81,5 +81,26 @@ export const registriesToolset: ToolsetDefinition = {
         },
       },
     },
+    {
+      resourceType: "artifact_file",
+      displayName: "Artifact File",
+      description: "Files within an artifact version. Supports list.",
+      toolset: "registries",
+      scope: "project",
+      identifierFields: ["registry_id", "artifact_id", "version"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/har/api/v1/registry/{registryIdentifier}/artifact/{artifactIdentifier}/version/{versionIdentifier}/files",
+          pathParams: {
+            registry_id: "registryIdentifier",
+            artifact_id: "artifactIdentifier",
+            version: "versionIdentifier",
+          },
+          responseExtractor: passthrough,
+          description: "List files in an artifact version",
+        },
+      },
+    },
   ],
 };

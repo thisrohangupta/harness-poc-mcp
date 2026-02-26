@@ -6,12 +6,12 @@ const passthrough = (raw: unknown) => raw;
 export const pullRequestsToolset: ToolsetDefinition = {
   name: "pull-requests",
   displayName: "Pull Requests",
-  description: "Harness Code pull requests",
+  description: "Harness Code pull requests, checks, and activities",
   resources: [
     {
       resourceType: "pull_request",
       displayName: "Pull Request",
-      description: "Code pull request. Supports list and get.",
+      description: "Code pull request. Supports list, get, and create.",
       toolset: "pull-requests",
       scope: "project",
       identifierFields: ["repo_id", "pr_number"],
@@ -39,6 +39,54 @@ export const pullRequestsToolset: ToolsetDefinition = {
           },
           responseExtractor: passthrough,
           description: "Get pull request details",
+        },
+        create: {
+          method: "POST",
+          path: "/code/api/v1/repos/{repoIdentifier}/pullreq",
+          pathParams: { repo_id: "repoIdentifier" },
+          bodyBuilder: (input) => input.body,
+          responseExtractor: passthrough,
+          description: "Create a pull request",
+        },
+      },
+    },
+    {
+      resourceType: "pr_check",
+      displayName: "PR Check",
+      description: "Status checks on a pull request. Supports list.",
+      toolset: "pull-requests",
+      scope: "project",
+      identifierFields: ["repo_id", "pr_number"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/code/api/v1/repos/{repoIdentifier}/pullreq/{prNumber}/checks",
+          pathParams: {
+            repo_id: "repoIdentifier",
+            pr_number: "prNumber",
+          },
+          responseExtractor: passthrough,
+          description: "List status checks for a pull request",
+        },
+      },
+    },
+    {
+      resourceType: "pr_activity",
+      displayName: "PR Activity",
+      description: "Activity timeline on a pull request (comments, reviews, status changes). Supports list.",
+      toolset: "pull-requests",
+      scope: "project",
+      identifierFields: ["repo_id", "pr_number"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/code/api/v1/repos/{repoIdentifier}/pullreq/{prNumber}/activities",
+          pathParams: {
+            repo_id: "repoIdentifier",
+            pr_number: "prNumber",
+          },
+          responseExtractor: passthrough,
+          description: "List activities for a pull request",
         },
       },
     },

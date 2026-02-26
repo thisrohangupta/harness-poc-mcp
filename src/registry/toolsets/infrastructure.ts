@@ -67,6 +67,17 @@ export const infrastructureToolset: ToolsetDefinition = {
           description: "Delete infrastructure definition",
         },
       },
+      executeActions: {
+        move_configs: {
+          method: "POST",
+          path: "/ng/api/infrastructures/move-config/{infraIdentifier}",
+          pathParams: { infrastructure_id: "infraIdentifier" },
+          queryParams: { environment_id: "environmentIdentifier" },
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          actionDescription: "Move infrastructure configuration (e.g., move inline config to remote or vice versa)",
+        },
+      },
     },
   ],
 };

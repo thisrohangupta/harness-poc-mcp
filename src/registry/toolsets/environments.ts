@@ -70,6 +70,16 @@ export const environmentsToolset: ToolsetDefinition = {
           description: "Delete an environment",
         },
       },
+      executeActions: {
+        move_configs: {
+          method: "POST",
+          path: "/ng/api/environmentsV2/move-config/{environmentIdentifier}",
+          pathParams: { environment_id: "environmentIdentifier" },
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          actionDescription: "Move environment configuration (e.g., move inline config to remote or vice versa)",
+        },
+      },
     },
   ],
 };

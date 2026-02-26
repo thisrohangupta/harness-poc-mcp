@@ -1,0 +1,265 @@
+import type { ToolsetDefinition } from "../types.js";
+
+const ngExtract = (raw: unknown) => {
+  const r = raw as { data?: unknown };
+  return r.data ?? raw;
+};
+
+const pageExtract = (raw: unknown) => {
+  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
+  return { items: r.data?.content ?? [], total: r.data?.totalElements ?? 0 };
+};
+
+export const accessControlToolset: ToolsetDefinition = {
+  name: "access_control",
+  displayName: "Access Control",
+  description: "RBAC — users, user groups, service accounts, roles, role assignments, resource groups, and permissions",
+  resources: [
+    {
+      resourceType: "user",
+      displayName: "User",
+      description: "Platform user. Supports list and get.",
+      toolset: "access_control",
+      scope: "account",
+      identifierFields: ["user_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "POST",
+          path: "/ng/api/user/aggregate",
+          queryParams: { page: "pageIndex", size: "pageSize" },
+          bodyBuilder: (input) => ({
+            searchTerm: input.search_term ?? "",
+          }),
+          responseExtractor: pageExtract,
+          description: "List all users in the account",
+        },
+        get: {
+          method: "GET",
+          path: "/ng/api/user/{userId}",
+          pathParams: { user_id: "userId" },
+          responseExtractor: ngExtract,
+          description: "Get user details by ID",
+        },
+      },
+    },
+    {
+      resourceType: "user_group",
+      displayName: "User Group",
+      description: "User group for RBAC. Supports list, get, create, and delete.",
+      toolset: "access_control",
+      scope: "project",
+      identifierFields: ["user_group_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/ng/api/user-groups",
+          queryParams: {
+            search_term: "searchTerm",
+            page: "pageIndex",
+            size: "pageSize",
+          },
+          responseExtractor: pageExtract,
+          description: "List user groups",
+        },
+        get: {
+          method: "GET",
+          path: "/ng/api/user-groups/{groupIdentifier}",
+          pathParams: { user_group_id: "groupIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get user group details",
+        },
+        create: {
+          method: "POST",
+          path: "/ng/api/user-groups",
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          description: "Create a user group",
+        },
+        delete: {
+          method: "DELETE",
+          path: "/ng/api/user-groups/{groupIdentifier}",
+          pathParams: { user_group_id: "groupIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Delete a user group",
+        },
+      },
+    },
+    {
+      resourceType: "service_account",
+      displayName: "Service Account",
+      description: "Service account for API access. Supports list, get, create, and delete.",
+      toolset: "access_control",
+      scope: "project",
+      identifierFields: ["service_account_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/ng/api/serviceaccount",
+          queryParams: {
+            search_term: "searchTerm",
+            page: "pageIndex",
+            size: "pageSize",
+          },
+          responseExtractor: pageExtract,
+          description: "List service accounts",
+        },
+        get: {
+          method: "GET",
+          path: "/ng/api/serviceaccount/{serviceAccountIdentifier}",
+          pathParams: { service_account_id: "serviceAccountIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get service account details",
+        },
+        create: {
+          method: "POST",
+          path: "/ng/api/serviceaccount",
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          description: "Create a service account",
+        },
+        delete: {
+          method: "DELETE",
+          path: "/ng/api/serviceaccount/{serviceAccountIdentifier}",
+          pathParams: { service_account_id: "serviceAccountIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Delete a service account",
+        },
+      },
+    },
+    {
+      resourceType: "role",
+      displayName: "Role",
+      description: "RBAC role. Supports list, get, create, and delete.",
+      toolset: "access_control",
+      scope: "project",
+      identifierFields: ["role_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/ng/api/roles",
+          queryParams: {
+            search_term: "searchTerm",
+            page: "pageIndex",
+            size: "pageSize",
+          },
+          responseExtractor: pageExtract,
+          description: "List available roles",
+        },
+        get: {
+          method: "GET",
+          path: "/ng/api/roles/{roleIdentifier}",
+          pathParams: { role_id: "roleIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get role details",
+        },
+        create: {
+          method: "POST",
+          path: "/ng/api/roles",
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          description: "Create a role",
+        },
+        delete: {
+          method: "DELETE",
+          path: "/ng/api/roles/{roleIdentifier}",
+          pathParams: { role_id: "roleIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Delete a role",
+        },
+      },
+    },
+    {
+      resourceType: "role_assignment",
+      displayName: "Role Assignment",
+      description: "Role assignment binding a principal to a role. Supports list and create.",
+      toolset: "access_control",
+      scope: "project",
+      identifierFields: ["role_assignment_id"],
+      listFilterFields: ["principal_type", "role_identifier", "resource_group_identifier"],
+      operations: {
+        list: {
+          method: "POST",
+          path: "/ng/api/roleassignments/filter",
+          queryParams: { page: "pageIndex", size: "pageSize" },
+          bodyBuilder: (input) => ({
+            principalTypeFilter: input.principal_type ? [input.principal_type] : undefined,
+            roleFilter: input.role_identifier ? [input.role_identifier] : undefined,
+            resourceGroupFilter: input.resource_group_identifier ? [input.resource_group_identifier] : undefined,
+          }),
+          responseExtractor: pageExtract,
+          description: "List role assignments with filters",
+        },
+        create: {
+          method: "POST",
+          path: "/ng/api/roleassignments",
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          description: "Create a role assignment",
+        },
+      },
+    },
+    {
+      resourceType: "resource_group",
+      displayName: "Resource Group",
+      description: "Resource group defining a set of resources for RBAC. Supports list, get, create, and delete.",
+      toolset: "access_control",
+      scope: "project",
+      identifierFields: ["resource_group_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/ng/api/resourcegroup",
+          queryParams: {
+            search_term: "searchTerm",
+            page: "pageIndex",
+            size: "pageSize",
+          },
+          responseExtractor: pageExtract,
+          description: "List resource groups",
+        },
+        get: {
+          method: "GET",
+          path: "/ng/api/resourcegroup/{resourceGroupIdentifier}",
+          pathParams: { resource_group_id: "resourceGroupIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get resource group details",
+        },
+        create: {
+          method: "POST",
+          path: "/ng/api/resourcegroup",
+          bodyBuilder: (input) => input.body,
+          responseExtractor: ngExtract,
+          description: "Create a resource group",
+        },
+        delete: {
+          method: "DELETE",
+          path: "/ng/api/resourcegroup/{resourceGroupIdentifier}",
+          pathParams: { resource_group_id: "resourceGroupIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Delete a resource group",
+        },
+      },
+    },
+    {
+      resourceType: "permission",
+      displayName: "Permission",
+      description: "Platform permission. List-only.",
+      toolset: "access_control",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/authz/api/permissions",
+          responseExtractor: ngExtract,
+          description: "List all available permissions",
+        },
+      },
+    },
+  ],
+};

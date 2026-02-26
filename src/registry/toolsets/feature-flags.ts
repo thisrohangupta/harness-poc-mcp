@@ -5,9 +5,41 @@ const passthrough = (raw: unknown) => raw;
 
 export const featureFlagsToolset: ToolsetDefinition = {
   name: "feature-flags",
-  displayName: "Feature Flags",
-  description: "Harness Feature Flags — create, toggle, and manage flags",
+  displayName: "Feature Management & Experimentation",
+  description: "Harness FME — feature flags, workspaces, and environments",
   resources: [
+    {
+      resourceType: "fme_workspace",
+      displayName: "FME Workspace",
+      description: "Feature Management workspace. Supports list.",
+      toolset: "feature-flags",
+      scope: "project",
+      identifierFields: ["workspace_id"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/cf/admin/workspaces",
+          responseExtractor: passthrough,
+          description: "List FME workspaces",
+        },
+      },
+    },
+    {
+      resourceType: "fme_environment",
+      displayName: "FME Environment",
+      description: "Feature Management environment. Supports list.",
+      toolset: "feature-flags",
+      scope: "project",
+      identifierFields: ["environment_id"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/cf/admin/environments",
+          responseExtractor: passthrough,
+          description: "List FME environments",
+        },
+      },
+    },
     {
       resourceType: "feature_flag",
       displayName: "Feature Flag",

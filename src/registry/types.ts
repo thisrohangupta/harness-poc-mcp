@@ -26,7 +26,8 @@ export type ToolsetName =
   | "ccm"
   | "sei"
   | "scs"
-  | "sto";
+  | "sto"
+  | "access_control";
 
 export type OperationName = "list" | "get" | "create" | "update" | "delete";
 
