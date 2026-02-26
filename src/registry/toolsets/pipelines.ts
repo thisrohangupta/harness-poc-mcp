@@ -197,6 +197,23 @@ export const pipelinesToolset: ToolsetDefinition = {
       },
     },
     {
+      resourceType: "pipeline_summary",
+      displayName: "Pipeline Summary",
+      description: "Lightweight pipeline summary — less data than full get_pipeline. Supports get only.",
+      toolset: "pipelines",
+      scope: "project",
+      identifierFields: ["pipeline_id"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/pipeline/api/pipelines/summary/{pipelineIdentifier}",
+          pathParams: { pipeline_id: "pipelineIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get a lightweight pipeline summary (without full YAML)",
+        },
+      },
+    },
+    {
       resourceType: "input_set",
       displayName: "Input Set",
       description: "Reusable runtime input sets for pipelines",

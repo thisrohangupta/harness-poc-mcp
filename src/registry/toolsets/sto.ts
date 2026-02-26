@@ -78,6 +78,17 @@ export const stoToolset: ToolsetDefinition = {
           responseExtractor: passthrough,
           actionDescription: "Reject a security exemption",
         },
+        promote: {
+          method: "POST",
+          path: "/sto/api/v2/exemptions/{exemptionId}/promote",
+          pathParams: { exemption_id: "exemptionId" },
+          bodyBuilder: (input) => ({
+            scope: input.scope,
+            comment: input.comment,
+          }),
+          responseExtractor: passthrough,
+          actionDescription: "Promote a security exemption to a wider scope. Pass scope and optional comment.",
+        },
       },
     },
   ],

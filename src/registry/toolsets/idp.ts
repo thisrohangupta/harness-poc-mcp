@@ -105,6 +105,40 @@ export const idpToolset: ToolsetDefinition = {
       },
     },
     {
+      resourceType: "scorecard_stats",
+      displayName: "Scorecard Stats",
+      description: "Aggregate statistics for an IDP scorecard. Supports get.",
+      toolset: "idp",
+      scope: "account",
+      identifierFields: ["scorecard_id"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/idp/api/scorecards/{scorecardIdentifier}/stats",
+          pathParams: { scorecard_id: "scorecardIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get aggregate statistics for a scorecard",
+        },
+      },
+    },
+    {
+      resourceType: "scorecard_check_stats",
+      displayName: "Scorecard Check Stats",
+      description: "Statistics for a specific scorecard check. Supports get.",
+      toolset: "idp",
+      scope: "account",
+      identifierFields: ["check_id"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/idp/api/scorecards/checks/{checkIdentifier}/stats",
+          pathParams: { check_id: "checkIdentifier" },
+          responseExtractor: ngExtract,
+          description: "Get statistics for a specific scorecard check",
+        },
+      },
+    },
+    {
       resourceType: "idp_score",
       displayName: "IDP Score",
       description: "Entity score summary from IDP scorecards. Supports list and get.",

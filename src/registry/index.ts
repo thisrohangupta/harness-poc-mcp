@@ -28,6 +28,7 @@ import { seiToolset } from "./toolsets/sei.js";
 import { scsToolset } from "./toolsets/scs.js";
 import { stoToolset } from "./toolsets/sto.js";
 import { accessControlToolset } from "./toolsets/access-control.js";
+import { settingsToolset } from "./toolsets/settings.js";
 
 const log = createLogger("registry");
 
@@ -56,6 +57,7 @@ const ALL_TOOLSETS: ToolsetDefinition[] = [
   scsToolset,
   stoToolset,
   accessControlToolset,
+  settingsToolset,
 ];
 
 /**

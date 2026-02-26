@@ -81,5 +81,21 @@ export const connectorsToolset: ToolsetDefinition = {
         },
       },
     },
+    {
+      resourceType: "connector_catalogue",
+      displayName: "Connector Catalogue",
+      description: "Catalogue of available connector types. Supports list only.",
+      toolset: "connectors",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/ng/api/connectors/catalogue",
+          responseExtractor: ngExtract,
+          description: "List all available connector types in the catalogue",
+        },
+      },
+    },
   ],
 };

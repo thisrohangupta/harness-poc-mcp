@@ -13,6 +13,8 @@ const pageExtract = (raw: unknown) => {
   };
 };
 
+const passthrough = (raw: unknown) => raw;
+
 const gqlExtract = (field: string) => (raw: unknown) => {
   const r = raw as { data?: Record<string, unknown> };
   return r.data?.[field] ?? raw;
@@ -587,6 +589,50 @@ Replaces the 5 separate resource-type tools from the official server (EC2, Azure
             "Get recommendations scoped to a specific perspective, with aggregate savings stats. Filter by min_saving, time_filter.",
         },
       },
+      executeActions: {
+        update_state: {
+          method: "POST",
+          path: "/ccm/api/recommendation/overview/change-state",
+          queryParams: {
+            recommendation_id: "recommendationId",
+            state: "state",
+          },
+          bodyBuilder: () => ({}),
+          responseExtractor: ngExtract,
+          actionDescription: "Update a recommendation state. Pass recommendation_id and state (OPEN, APPLIED, IGNORED).",
+        },
+        override_savings: {
+          method: "PUT",
+          path: "/ccm/api/recommendation/overview/override-savings",
+          queryParams: {
+            recommendation_id: "recommendationId",
+            overridden_savings: "overriddenSavings",
+          },
+          bodyBuilder: () => ({}),
+          responseExtractor: ngExtract,
+          actionDescription: "Override the estimated savings for a recommendation. Pass recommendation_id and overridden_savings.",
+        },
+        create_jira_ticket: {
+          method: "POST",
+          path: "/ccm/api/recommendation/jira/create",
+          bodyBuilder: (input) => ({
+            recommendationId: input.recommendation_id,
+            ...(typeof input.body === "object" && input.body !== null ? input.body as Record<string, unknown> : {}),
+          }),
+          responseExtractor: ngExtract,
+          actionDescription: "Create a Jira ticket for a recommendation. Pass recommendation_id and Jira details in body.",
+        },
+        create_snow_ticket: {
+          method: "POST",
+          path: "/ccm/api/recommendation/servicenow/create",
+          bodyBuilder: (input) => ({
+            recommendationId: input.recommendation_id,
+            ...(typeof input.body === "object" && input.body !== null ? input.body as Record<string, unknown> : {}),
+          }),
+          responseExtractor: ngExtract,
+          actionDescription: "Create a ServiceNow ticket for a recommendation. Pass recommendation_id and ServiceNow details in body.",
+        },
+      },
     },
 
     // ------------------------------------------------------------------
@@ -658,6 +704,295 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
           queryParams: { page: "page", size: "size" },
           responseExtractor: ngExtract,
           description: "List all cost categories (business mappings)",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 8. cost_overview — REST overview endpoint
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_overview",
+      displayName: "Cost Overview",
+      description: "High-level cost overview with start/end time and groupBy. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      listFilterFields: ["start_time", "end_time", "group_by"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/ccm/api/overview",
+          queryParams: {
+            start_time: "startTime",
+            end_time: "endTime",
+            group_by: "groupBy",
+          },
+          responseExtractor: ngExtract,
+          description: "Get cost overview with optional time range and grouping",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 9. cost_metadata — GraphQL CCM metadata
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_metadata",
+      displayName: "Cost Metadata",
+      description: "CCM metadata — available connectors, default perspective IDs, currency preferences. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/ccm/api/graphql",
+          bodyBuilder: () => ({
+            query: CCM_METADATA_QUERY,
+            operationName: "FetchCcmMetaData",
+            variables: {},
+          }),
+          responseExtractor: gqlExtract("ccmMetaData"),
+          description: "Get CCM metadata (available connectors, default perspectives, currency)",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 10. cost_filter_value — GraphQL perspective filter values
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_filter_value",
+      displayName: "Cost Filter Value",
+      description: "Available filter values for perspectives (e.g. regions, accounts, services). Supports list.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      listFilterFields: ["perspective_id", "field_id", "field_identifier"],
+      operations: {
+        list: {
+          method: "POST",
+          path: "/ccm/api/graphql",
+          bodyBuilder: (input) => ({
+            query: `query FetchPerspectiveFilters($filters: [QLCEViewFilterWrapperInput], $values: [String]) {
+  perspectiveFilters(filters: $filters, values: $values) { values { name id __typename } __typename }
+}`,
+            operationName: "FetchPerspectiveFilters",
+            variables: {
+              filters: input.perspective_id
+                ? buildViewFilter(input.perspective_id as string)
+                : [],
+              values: input.field_id ? [input.field_id] : [],
+            },
+          }),
+          responseExtractor: gqlExtract("perspectiveFilters"),
+          description: "List available filter values for a perspective field",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 11. cost_recommendation_stats — REST overview stats
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_recommendation_stats",
+      displayName: "Cost Recommendation Stats",
+      description: "Aggregate statistics for cost recommendations. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/ccm/api/recommendation/overview/stats",
+          bodyBuilder: () => ({}),
+          responseExtractor: ngExtract,
+          description: "Get aggregate cost recommendation statistics",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 12. cost_recommendation_by_type — REST stats per resource type
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_recommendation_by_type",
+      displayName: "Cost Recommendation By Type",
+      description: "Cost recommendation stats grouped by resource type. Supports list.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        list: {
+          method: "POST",
+          path: "/ccm/api/recommendation/overview/resource-type/stats",
+          bodyBuilder: () => ({}),
+          responseExtractor: ngExtract,
+          description: "List cost recommendation stats grouped by resource type",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 13. cost_recommendation_detail — REST detail by resource type path
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_recommendation_detail",
+      displayName: "Cost Recommendation Detail",
+      description: "Detailed cost recommendation for a specific resource type. Supports get. Pass type_path: ec2-instance, azure-vm, ecs-service, node-pool, or workload.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: ["type_path"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/ccm/api/recommendation/details/{typePath}",
+          pathParams: { type_path: "typePath" },
+          responseExtractor: ngExtract,
+          description: "Get detailed recommendation for a resource type (ec2-instance, azure-vm, ecs-service, node-pool, workload)",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 14. cost_ignored_anomaly — POST with ignored filter
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_ignored_anomaly",
+      displayName: "Cost Ignored Anomaly",
+      description: "Ignored cost anomalies. Supports list.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      listFilterFields: ["limit", "offset"],
+      operations: {
+        list: {
+          method: "POST",
+          path: "/ccm/api/anomaly",
+          bodyBuilder: (input) => ({
+            anomalyFilterPropertiesDTO: {
+              filterType: "Anomaly",
+              status: ["IGNORED"],
+              limit: (input.limit as number) ?? 25,
+              offset: (input.offset as number) ?? 0,
+            },
+          }),
+          responseExtractor: ngExtract,
+          description: "List ignored cost anomalies",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 15. cost_commitment_coverage — Lightwing compute coverage
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_commitment_coverage",
+      displayName: "Cost Commitment Coverage",
+      description: "Commitment (reserved instance / savings plan) compute coverage. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/lw/co/api/accounts/{accountId}/v1/detail/compute_coverage",
+          pathParams: { account_id: "accountId" },
+          bodyBuilder: (input) => input.body ?? {},
+          responseExtractor: passthrough,
+          description: "Get commitment compute coverage details",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 16. cost_commitment_savings — Lightwing savings
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_commitment_savings",
+      displayName: "Cost Commitment Savings",
+      description: "Commitment savings details. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/lw/co/api/accounts/{accountId}/v1/detail/savings",
+          pathParams: { account_id: "accountId" },
+          bodyBuilder: (input) => input.body ?? {},
+          responseExtractor: passthrough,
+          description: "Get commitment savings details",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 17. cost_commitment_utilisation — Lightwing utilisation
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_commitment_utilisation",
+      displayName: "Cost Commitment Utilisation",
+      description: "Commitment utilisation details. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/lw/co/api/accounts/{accountId}/v1/detail/commitment_utilisation",
+          pathParams: { account_id: "accountId" },
+          bodyBuilder: (input) => input.body ?? {},
+          responseExtractor: passthrough,
+          description: "Get commitment utilisation details",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 18. cost_commitment_analysis — Lightwing spend detail v2
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_commitment_analysis",
+      displayName: "Cost Commitment Analysis",
+      description: "Commitment spend analysis. Supports get.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/lw/co/api/accounts/{accountId}/v2/spend/detail",
+          pathParams: { account_id: "accountId" },
+          bodyBuilder: (input) => input.body ?? {},
+          responseExtractor: passthrough,
+          description: "Get commitment spend analysis details",
+        },
+      },
+    },
+
+    // ------------------------------------------------------------------
+    // 19. cost_estimated_savings — Lightwing estimated savings per cloud account
+    // ------------------------------------------------------------------
+    {
+      resourceType: "cost_estimated_savings",
+      displayName: "Cost Estimated Savings",
+      description: "Estimated savings for a cloud account setup. Supports get. Pass account_id and cloud_account_id.",
+      toolset: "ccm",
+      scope: "account",
+      identifierFields: ["cloud_account_id"],
+      operations: {
+        get: {
+          method: "POST",
+          path: "/lw/co/api/accounts/{accountId}/v2/setup/{cloudAccountId}/estimated_savings",
+          pathParams: {
+            account_id: "accountId",
+            cloud_account_id: "cloudAccountId",
+          },
+          bodyBuilder: (input) => input.body ?? {},
+          responseExtractor: passthrough,
+          description: "Get estimated savings for a cloud account",
         },
       },
     },

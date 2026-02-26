@@ -199,6 +199,115 @@ export const gitopsToolset: ToolsetDefinition = {
       },
     },
     {
+      resourceType: "gitops_app_event",
+      displayName: "GitOps App Event",
+      description: "Events for a GitOps application. Supports list.",
+      toolset: "gitops",
+      scope: "project",
+      identifierFields: ["agent_id", "app_name"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/gitops/api/v1/agents/{agentIdentifier}/applications/{appName}/events",
+          pathParams: {
+            agent_id: "agentIdentifier",
+            app_name: "appName",
+          },
+          responseExtractor: passthrough,
+          description: "List events for a GitOps application",
+        },
+      },
+    },
+    {
+      resourceType: "gitops_pod_log",
+      displayName: "GitOps Pod Log",
+      description: "Pod logs for a GitOps application. Supports get with pod_name, namespace, container, tail_lines.",
+      toolset: "gitops",
+      scope: "project",
+      identifierFields: ["agent_id", "app_name"],
+      listFilterFields: ["pod_name", "namespace", "container", "tail_lines"],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/gitops/api/v1/agents/{agentIdentifier}/applications/{appName}/logs",
+          pathParams: {
+            agent_id: "agentIdentifier",
+            app_name: "appName",
+          },
+          queryParams: {
+            pod_name: "podName",
+            namespace: "namespace",
+            container: "container",
+            tail_lines: "tailLines",
+          },
+          responseExtractor: passthrough,
+          description: "Get pod logs for a GitOps application",
+        },
+      },
+    },
+    {
+      resourceType: "gitops_managed_resource",
+      displayName: "GitOps Managed Resource",
+      description: "Managed Kubernetes resources for a GitOps application. Supports list.",
+      toolset: "gitops",
+      scope: "project",
+      identifierFields: ["agent_id", "app_name"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/gitops/api/v1/agents/{agentIdentifier}/applications/{appName}/managed-resources",
+          pathParams: {
+            agent_id: "agentIdentifier",
+            app_name: "appName",
+          },
+          responseExtractor: passthrough,
+          description: "List managed resources for a GitOps application",
+        },
+      },
+    },
+    {
+      resourceType: "gitops_resource_action",
+      displayName: "GitOps Resource Action",
+      description: "Available actions for a specific resource in a GitOps application. Supports list with namespace, resource_name, kind.",
+      toolset: "gitops",
+      scope: "project",
+      identifierFields: ["agent_id", "app_name"],
+      listFilterFields: ["namespace", "resource_name", "kind"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/gitops/api/v1/agents/{agentIdentifier}/applications/{appName}/resource/actions",
+          pathParams: {
+            agent_id: "agentIdentifier",
+            app_name: "appName",
+          },
+          queryParams: {
+            namespace: "namespace",
+            resource_name: "resourceName",
+            kind: "kind",
+          },
+          responseExtractor: passthrough,
+          description: "List available actions for a resource in a GitOps application",
+        },
+      },
+    },
+    {
+      resourceType: "gitops_dashboard",
+      displayName: "GitOps Dashboard",
+      description: "GitOps dashboard overview with summary metrics. Supports get.",
+      toolset: "gitops",
+      scope: "project",
+      identifierFields: [],
+      operations: {
+        get: {
+          method: "GET",
+          path: "/gitops/api/v1/dashboard/overview",
+          responseExtractor: passthrough,
+          description: "Get GitOps dashboard overview with summary metrics",
+        },
+      },
+    },
+    {
       resourceType: "gitops_app_resource_tree",
       displayName: "GitOps App Resource Tree",
       description: "Kubernetes resource tree for a GitOps application. Supports get.",

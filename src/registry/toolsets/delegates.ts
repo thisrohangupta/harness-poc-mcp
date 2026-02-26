@@ -85,6 +85,13 @@ export const delegatesToolset: ToolsetDefinition = {
           responseExtractor: ngExtract,
           actionDescription: "Revoke a delegate token. Sets status to REVOKED.",
         },
+        get_delegates: {
+          method: "GET",
+          path: "/ng/api/delegate-token-ng/{tokenName}/delegates",
+          pathParams: { token_name: "tokenName" },
+          responseExtractor: ngExtract,
+          actionDescription: "Get delegates associated with a specific token.",
+        },
       },
     },
   ],
