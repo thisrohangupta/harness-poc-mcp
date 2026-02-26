@@ -16,6 +16,7 @@ export const pullRequestsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["repo_id", "pr_number"],
       listFilterFields: ["state", "query"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/code/orgs/{orgIdentifier}/projects/{projectIdentifier}/repos/{repoIdentifier}/pull-requests/{prNumber}",
       operations: {
         list: {
           method: "GET",

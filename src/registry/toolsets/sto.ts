@@ -18,6 +18,7 @@ export const stoToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["issue_id"],
       listFilterFields: ["search", "severity"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/sto/issues/{issueId}",
       operations: {
         list: {
           method: "GET",
@@ -47,6 +48,7 @@ export const stoToolset: ToolsetDefinition = {
       toolset: "sto",
       scope: "project",
       identifierFields: ["exemption_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/sto/exemptions",
       operations: {
         list: {
           method: "GET",

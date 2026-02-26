@@ -1,6 +1,7 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { Registry } from "../registry/index.js";
 import type { HarnessClient } from "../client/harness-client.js";
+import type { Config } from "../config.js";
 
 import { registerListTool } from "./harness-list.js";
 import { registerGetTool } from "./harness-get.js";
@@ -11,8 +12,9 @@ import { registerExecuteTool } from "./harness-execute.js";
 import { registerDiagnoseTool } from "./harness-diagnose.js";
 import { registerSearchTool } from "./harness-search.js";
 import { registerDescribeTool } from "./harness-describe.js";
+import { registerStatusTool } from "./harness-status.js";
 
-export function registerAllTools(server: McpServer, registry: Registry, client: HarnessClient): void {
+export function registerAllTools(server: McpServer, registry: Registry, client: HarnessClient, config: Config): void {
   registerListTool(server, registry, client);
   registerGetTool(server, registry, client);
   registerCreateTool(server, registry, client);
@@ -22,4 +24,5 @@ export function registerAllTools(server: McpServer, registry: Registry, client: 
   registerDiagnoseTool(server, registry, client);
   registerSearchTool(server, registry, client);
   registerDescribeTool(server, registry);
+  registerStatusTool(server, registry, client, config);
 }

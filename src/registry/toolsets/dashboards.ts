@@ -26,6 +26,7 @@ export const dashboardsToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: ["dashboard_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/dashboards",
       operations: {
         list: {
           method: "GET",

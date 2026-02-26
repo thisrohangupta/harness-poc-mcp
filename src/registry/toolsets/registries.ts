@@ -16,6 +16,7 @@ export const registriesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["registry_id"],
       listFilterFields: ["search", "type"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/registries/{registryIdentifier}",
       operations: {
         list: {
           method: "GET",
@@ -46,6 +47,7 @@ export const registriesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["registry_id", "artifact_id"],
       listFilterFields: ["search"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/registries/{registryIdentifier}/artifacts/{artifactIdentifier}",
       operations: {
         list: {
           method: "GET",

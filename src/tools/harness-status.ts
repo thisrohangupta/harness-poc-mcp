@@ -1,0 +1,204 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Registry } from "../registry/index.js";
+import type { HarnessClient } from "../client/harness-client.js";
+import type { Config } from "../config.js";
+import { jsonResult, errorResult } from "../utils/response-formatter.js";
+import { buildDeepLink } from "../utils/deep-links.js";
+import { toMcpError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
+
+const log = createLogger("status");
+
+interface ExecutionItem {
+  pipelineIdentifier?: string;
+  planExecutionId?: string;
+  name?: string;
+  status?: string;
+  startTs?: number;
+  endTs?: number;
+  [key: string]: unknown;
+}
+
+interface ListResult {
+  items?: ExecutionItem[];
+  total?: number;
+  [key: string]: unknown;
+}
+
+function summarizeExecution(
+  exec: ExecutionItem,
+  baseUrl: string,
+  accountId: string,
+  orgId: string,
+  projectId: string,
+): Record<string, unknown> {
+  const summary: Record<string, unknown> = {
+    execution_id: exec.planExecutionId,
+    pipeline: exec.pipelineIdentifier,
+    name: exec.name,
+    status: exec.status,
+    started_at: exec.startTs ? new Date(exec.startTs).toISOString() : undefined,
+    ended_at: exec.endTs ? new Date(exec.endTs).toISOString() : undefined,
+  };
+
+  if (exec.planExecutionId && exec.pipelineIdentifier) {
+    try {
+      summary._deepLink = buildDeepLink(baseUrl, accountId,
+        "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/pipelines/{pipelineIdentifier}/executions/{planExecutionId}/pipeline",
+        {
+          orgIdentifier: orgId,
+          projectIdentifier: projectId,
+          pipelineIdentifier: exec.pipelineIdentifier,
+          planExecutionId: exec.planExecutionId,
+        },
+      );
+    } catch {
+      // non-critical
+    }
+  }
+
+  return summary;
+}
+
+export function registerStatusTool(
+  server: McpServer,
+  registry: Registry,
+  client: HarnessClient,
+  config: Config,
+): void {
+  server.tool(
+    "harness_status",
+    "Get a live project health overview: recent failed executions, currently running executions, and recent deployment activity. Ideal first question: 'what's happening in my project right now?'",
+    {
+      org_id: z.string().describe("Organization identifier (overrides default)").optional(),
+      project_id: z.string().describe("Project identifier (overrides default)").optional(),
+      limit: z.number().describe("Max items per section (default 5, max 20)").default(5).optional(),
+    },
+    async (args) => {
+      try {
+        const orgId = args.org_id ?? config.HARNESS_DEFAULT_ORG_ID;
+        const projectId = args.project_id ?? config.HARNESS_DEFAULT_PROJECT_ID ?? "";
+        const limit = Math.min(args.limit ?? 5, 20);
+
+        const baseInput: Record<string, unknown> = {
+          org_id: orgId,
+          project_id: projectId,
+          size: limit,
+          page: 0,
+        };
+
+        log.info("Fetching project status", { orgId, projectId, limit });
+
+        // 3 parallel dispatches: failed, running, recent activity
+        const [failedResult, runningResult, recentResult] = await Promise.allSettled([
+          registry.dispatch(client, "execution", "list", {
+            ...baseInput,
+            status: "Failed",
+          }),
+          registry.dispatch(client, "execution", "list", {
+            ...baseInput,
+            status: "Running",
+          }),
+          registry.dispatch(client, "execution", "list", {
+            ...baseInput,
+            size: Math.min(limit * 2, 20),
+          }),
+        ]);
+
+        // Extract results with graceful degradation
+        const failed = failedResult.status === "fulfilled"
+          ? (failedResult.value as ListResult)
+          : null;
+        const running = runningResult.status === "fulfilled"
+          ? (runningResult.value as ListResult)
+          : null;
+        const recent = recentResult.status === "fulfilled"
+          ? (recentResult.value as ListResult)
+          : null;
+
+        if (failedResult.status === "rejected") {
+          log.warn("Failed to fetch failed executions", { error: String(failedResult.reason) });
+        }
+        if (runningResult.status === "rejected") {
+          log.warn("Failed to fetch running executions", { error: String(runningResult.reason) });
+        }
+        if (recentResult.status === "rejected") {
+          log.warn("Failed to fetch recent executions", { error: String(recentResult.reason) });
+        }
+
+        const failedItems = (failed?.items ?? []).map((e) =>
+          summarizeExecution(e, config.HARNESS_BASE_URL, config.HARNESS_ACCOUNT_ID, orgId, projectId),
+        );
+        const runningItems = (running?.items ?? []).map((e) =>
+          summarizeExecution(e, config.HARNESS_BASE_URL, config.HARNESS_ACCOUNT_ID, orgId, projectId),
+        );
+        const recentItems = (recent?.items ?? []).map((e) =>
+          summarizeExecution(e, config.HARNESS_BASE_URL, config.HARNESS_ACCOUNT_ID, orgId, projectId),
+        );
+
+        // Compute health
+        const totalFailed = failed?.total ?? failedItems.length;
+        const totalRunning = running?.total ?? runningItems.length;
+        const totalRecent = recent?.total ?? recentItems.length;
+
+        let health: "healthy" | "degraded" | "failing";
+        if (totalFailed === 0) {
+          health = "healthy";
+        } else if (totalRecent > 0 && totalFailed < totalRecent) {
+          health = "degraded";
+        } else {
+          health = "failing";
+        }
+
+        // Build project-level deployments deep link
+        let deploymentsLink: string | undefined;
+        try {
+          deploymentsLink = buildDeepLink(
+            config.HARNESS_BASE_URL,
+            config.HARNESS_ACCOUNT_ID,
+            "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/deployments",
+            { orgIdentifier: orgId, projectIdentifier: projectId },
+          );
+        } catch {
+          // non-critical
+        }
+
+        // Collect errors from rejected promises
+        const errors: Record<string, string> = {};
+        if (failedResult.status === "rejected") errors.failed = String(failedResult.reason);
+        if (runningResult.status === "rejected") errors.running = String(runningResult.reason);
+        if (recentResult.status === "rejected") errors.recent = String(recentResult.reason);
+
+        const status: Record<string, unknown> = {
+          project: {
+            org: orgId,
+            project: projectId,
+            url: deploymentsLink,
+          },
+          failed_executions: failedItems,
+          running_executions: runningItems,
+          recent_activity: recentItems,
+          summary: {
+            total_failed: totalFailed,
+            total_running: totalRunning,
+            total_recent: totalRecent,
+            health,
+          },
+          _deepLink: deploymentsLink,
+        };
+
+        if (Object.keys(errors).length > 0) {
+          status._errors = errors;
+        }
+
+        return jsonResult(status);
+      } catch (err) {
+        if (err instanceof Error) {
+          return errorResult(err.message);
+        }
+        throw toMcpError(err);
+      }
+    },
+  );
+}

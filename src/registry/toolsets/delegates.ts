@@ -17,6 +17,7 @@ export const delegatesToolset: ToolsetDefinition = {
       toolset: "delegates",
       scope: "account",
       identifierFields: ["delegate_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/resources/delegates",
       operations: {
         list: {
           method: "POST",
@@ -38,6 +39,7 @@ export const delegatesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["token_name"],
       listFilterFields: ["name", "status"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/resources/delegates/tokens",
       operations: {
         list: {
           method: "GET",

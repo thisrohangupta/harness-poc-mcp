@@ -16,6 +16,7 @@ export const repositoriesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["repo_id"],
       listFilterFields: ["query", "sort"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/code/orgs/{orgIdentifier}/projects/{projectIdentifier}/repos/{repoIdentifier}",
       operations: {
         list: {
           method: "GET",

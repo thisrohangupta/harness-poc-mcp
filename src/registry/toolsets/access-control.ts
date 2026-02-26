@@ -23,6 +23,7 @@ export const accessControlToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: ["user_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/access-control/users",
       operations: {
         list: {
           method: "POST",
@@ -51,6 +52,7 @@ export const accessControlToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["user_group_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/access-control/user-groups/{groupIdentifier}",
       operations: {
         list: {
           method: "GET",
@@ -94,6 +96,7 @@ export const accessControlToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["service_account_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/access-control/service-accounts/{serviceAccountIdentifier}",
       operations: {
         list: {
           method: "GET",
@@ -137,6 +140,7 @@ export const accessControlToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["role_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/access-control/roles/{roleIdentifier}",
       operations: {
         list: {
           method: "GET",
@@ -210,6 +214,7 @@ export const accessControlToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["resource_group_id"],
       listFilterFields: ["search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/access-control/resource-groups/{resourceGroupIdentifier}",
       operations: {
         list: {
           method: "GET",

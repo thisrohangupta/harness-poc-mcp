@@ -148,8 +148,9 @@ export const pipelinesToolset: ToolsetDefinition = {
       description: "Automated pipeline triggers (webhook, cron, etc.)",
       toolset: "pipelines",
       scope: "project",
-      identifierFields: ["trigger_id"],
+      identifierFields: ["pipeline_id", "trigger_id"],
       listFilterFields: ["pipeline_id", "search_term"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/pipelines/{pipeline_id}/triggers",
       operations: {
         list: {
           method: "GET",
@@ -201,8 +202,9 @@ export const pipelinesToolset: ToolsetDefinition = {
       description: "Reusable runtime input sets for pipelines",
       toolset: "pipelines",
       scope: "project",
-      identifierFields: ["input_set_id"],
+      identifierFields: ["pipeline_id", "input_set_id"],
       listFilterFields: ["pipeline_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/pipelines/{pipeline_id}/input-sets",
       operations: {
         list: {
           method: "GET",

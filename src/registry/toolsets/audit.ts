@@ -18,6 +18,7 @@ export const auditToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: ["audit_id"],
       listFilterFields: ["search_term", "module", "action"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings/audit-trail",
       operations: {
         list: {
           method: "POST",
