@@ -1,12 +1,14 @@
 # Harness MCP Server
 
-An MCP (Model Context Protocol) server that gives AI agents full access to the Harness.io platform through 9 consolidated tools and 38 resource types.
+An MCP (Model Context Protocol) server that gives AI agents full access to the Harness.io platform through 10 consolidated tools and 68+ resource types.
+
+[![CI](https://github.com/thisrohangupta/harness-poc-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/thisrohangupta/harness-poc-mcp/actions/workflows/ci.yml)
 
 ## Why This Exists
 
-The naive approach to building an MCP server for a platform like Harness is 1:1 API-to-tool mapping: one tool per endpoint. That path leads to 240+ tools, which is an anti-pattern -- LLMs degrade at tool selection when the tool count is high, context windows fill with schema definitions, and every new API endpoint requires a new tool.
+The naive approach to building an MCP server for a platform like Harness is 1:1 API-to-tool mapping: one tool per endpoint. That path leads to 240+ tools, which is an anti-pattern — LLMs degrade at tool selection when the tool count is high, context windows fill with schema definitions, and every new API endpoint requires a new tool.
 
-This server takes a different approach: **registry-based dispatch**. Instead of hundreds of individual tools, there are 9 generic tools (`harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_diagnose`, `harness_describe`) that operate on any of 38 resource types. Adding a new Harness resource means adding a declarative data file -- no new tool registration, no schema changes, no prompt updates.
+This server takes a different approach: **registry-based dispatch**. Instead of hundreds of individual tools, there are 10 generic tools that operate on any of 68+ resource types. Adding a new Harness resource means adding a declarative data file — no new tool registration, no schema changes, no prompt updates.
 
 ## Quick Start
 
@@ -18,8 +20,8 @@ This server takes a different approach: **registry-based dispatch**. Instead of 
 ### Install and Build
 
 ```bash
-git clone <repo-url> harness-mcp-server
-cd harness-mcp-server
+git clone https://github.com/thisrohangupta/harness-poc-mcp.git
+cd harness-poc-mcp
 pnpm install
 pnpm build
 ```
@@ -56,7 +58,7 @@ pnpm inspect
   "mcpServers": {
     "harness": {
       "command": "node",
-      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
         "HARNESS_ACCOUNT_ID": "your-account-id",
@@ -75,7 +77,7 @@ pnpm inspect
   "mcpServers": {
     "harness": {
       "command": "node",
-      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
         "HARNESS_ACCOUNT_ID": "your-account-id",
@@ -94,7 +96,7 @@ pnpm inspect
   "mcpServers": {
     "harness": {
       "command": "node",
-      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "args": ["/absolute/path/to/harness-poc-mcp/build/index.js", "stdio"],
       "env": {
         "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
         "HARNESS_ACCOUNT_ID": "your-account-id",
@@ -122,11 +124,11 @@ pnpm inspect
 
 ## Tools Reference
 
-The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as optional overrides -- if omitted, they fall back to `HARNESS_DEFAULT_ORG_ID` and `HARNESS_DEFAULT_PROJECT_ID`.
+The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as optional overrides — if omitted, they fall back to `HARNESS_DEFAULT_ORG_ID` and `HARNESS_DEFAULT_PROJECT_ID`.
 
 | Tool | Description |
 |------|-------------|
-| `harness_describe` | Discover available resource types, operations, and fields. No API call -- returns local registry metadata. |
+| `harness_describe` | Discover available resource types, operations, and fields. No API call — returns local registry metadata. |
 | `harness_list` | List resources of a given type with filtering, search, and pagination. |
 | `harness_get` | Get a single resource by its identifier. |
 | `harness_create` | Create a new resource. Requires `confirmation: true`. |
@@ -135,6 +137,7 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 | `harness_execute` | Execute an action on a resource (run pipeline, toggle flag, sync app). Requires `confirmation: true`. |
 | `harness_search` | Search across multiple resource types in parallel with a single query. |
 | `harness_diagnose` | Aggregate execution details, pipeline YAML, and logs into a single diagnostic payload. |
+| `harness_status` | Get a real-time project health dashboard — recent executions, failure rates, and deep links. |
 
 ### Tool Examples
 
@@ -193,6 +196,12 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 { "execution_id": "abc123XYZ", "include_yaml": true, "include_logs": true }
 ```
 
+**Get project health status:**
+
+```json
+{ "pipeline_id": "my-pipeline", "limit": 5 }
+```
+
 **Create a connector:**
 
 ```json
@@ -216,7 +225,7 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 
 ## Resource Types
 
-38 resource types organized across 22 toolsets. Each resource type supports a subset of CRUD operations and optional execute actions.
+68+ resource types organized across 23 toolsets. Each resource type supports a subset of CRUD operations and optional execute actions.
 
 ### Pipelines
 
@@ -289,6 +298,7 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 | `registry` | x | x | | | | |
 | `artifact` | x | | | | | |
 | `artifact_version` | x | | | | | |
+| `artifact_file` | x | | | | | |
 
 ### Templates
 
@@ -308,17 +318,25 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `idp_entity` | x | | | | | |
 | `scorecard` | x | x | | | | |
+| `scorecard_check` | x | | | | | |
+| `idp_score` | x | | | | | |
+| `idp_workflow` | x | | | | | |
+| `idp_tech_doc` | x | | | | | |
 
 ### Pull Requests
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `pull_request` | x | x | | | | |
+| `pr_check` | x | | | | | |
+| `pr_activity` | x | | | | | |
 
 ### Feature Flags
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `fme_workspace` | x | | | | | |
+| `fme_environment` | x | | | | | |
 | `feature_flag` | x | x | x | | x | `toggle` |
 
 ### GitOps
@@ -329,6 +347,9 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 | `gitops_application` | x | x | | | | `sync` |
 | `gitops_cluster` | x | | | | | |
 | `gitops_repository` | x | | | | | |
+| `gitops_applicationset` | x | | | | | |
+| `gitops_repo_credential` | x | | | | | |
+| `gitops_app_resource_tree` | | x | | | | |
 
 ### Chaos Engineering
 
@@ -336,13 +357,20 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `chaos_experiment` | x | x | | | | `run` |
 | `chaos_probe` | x | | | | | |
+| `chaos_experiment_template` | x | | | | | |
+| `chaos_infrastructure` | x | | | | | |
+| `chaos_experiment_run` | x | | | | | |
+| `chaos_loadtest` | x | | | | | |
 
 ### Cloud Cost Management (CCM)
 
 | Resource Type | List | Get | Create | Update | Delete | Execute Actions |
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
-| `cost_perspective` | x | x | | | | |
-| `cost_recommendation` | x | | | | | |
+| `cost_perspective` | x | x | x | x | x | |
+| `cost_breakdown` | x | | | | | |
+| `cost_timeseries` | x | | | | | |
+| `cost_summary` | x | x | | | | |
+| `cost_recommendation` | x | x | | | | |
 | `cost_anomaly` | x | | | | | |
 | `cost_category` | x | | | | | |
 
@@ -358,6 +386,10 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 |---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
 | `artifact_security` | x | | | | | |
 | `code_repo_security` | x | | | | | |
+| `scs_sbom` | x | | | | | |
+| `scs_artifact_component` | x | | | | | |
+| `scs_compliance_result` | x | | | | | |
+| `scs_opa_policy` | x | | | | | |
 
 ### Security Testing Orchestration (STO)
 
@@ -366,9 +398,39 @@ The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as 
 | `security_issue` | x | x | | | | |
 | `security_exemption` | x | | | | | |
 
+### Access Control
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `user` | x | | | | | |
+| `user_group` | x | x | | | | |
+| `service_account` | x | x | | | | |
+| `role` | x | x | | | | |
+| `role_assignment` | x | | | | | |
+| `resource_group` | x | x | | | | |
+| `permission` | x | | | | | |
+
+## MCP Prompts
+
+| Prompt | Description | Parameters |
+|--------|-------------|------------|
+| `debug-pipeline-failure` | Analyze a failed execution: gathers execution details, pipeline YAML, and logs, then provides root cause analysis and suggested fixes | `executionId` (required), `projectId` (optional) |
+| `create-pipeline` | Generate a new pipeline YAML from natural language requirements, reviewing existing resources for context | `description` (required), `projectId` (optional) |
+| `optimize-costs` | Analyze cloud cost data, surface recommendations and anomalies, prioritized by potential savings | `projectId` (optional) |
+| `security-review` | Review security issues across Harness resources and suggest remediations by severity | `projectId` (optional), `severity` (optional, default: `critical,high`) |
+| `onboard-service` | Walk through onboarding a new service with environments and a deployment pipeline | `serviceName` (required), `projectId` (optional) |
+
+## MCP Resources
+
+| Resource URI | Description | MIME Type |
+|--------------|-------------|-----------|
+| `pipeline:///{pipelineId}` | Pipeline YAML definition | `application/x-yaml` |
+| `pipeline:///{orgId}/{projectId}/{pipelineId}` | Pipeline YAML (with explicit scope) | `application/x-yaml` |
+| `executions:///recent` | Last 10 pipeline execution summaries | `application/json` |
+
 ## Toolset Filtering
 
-By default, all 22 toolsets (and their 38 resource types) are enabled. Use `HARNESS_TOOLSETS` to expose only the toolsets you need. This reduces the resource types the LLM sees, improving tool selection accuracy.
+By default, all 23 toolsets (and their 68+ resource types) are enabled. Use `HARNESS_TOOLSETS` to expose only the toolsets you need. This reduces the resource types the LLM sees, improving tool selection accuracy.
 
 ```bash
 # Only expose pipelines, services, and connectors
@@ -389,18 +451,19 @@ Available toolset names:
 | `audit` | audit_event |
 | `delegates` | delegate, delegate_token |
 | `repositories` | repository |
-| `registries` | registry, artifact, artifact_version |
+| `registries` | registry, artifact, artifact_version, artifact_file |
 | `templates` | template |
 | `dashboards` | dashboard |
-| `idp` | idp_entity, scorecard |
-| `pull-requests` | pull_request |
-| `feature-flags` | feature_flag |
-| `gitops` | gitops_agent, gitops_application, gitops_cluster, gitops_repository |
-| `chaos` | chaos_experiment, chaos_probe |
-| `ccm` | cost_perspective, cost_recommendation, cost_anomaly, cost_category |
+| `idp` | idp_entity, scorecard, scorecard_check, idp_score, idp_workflow, idp_tech_doc |
+| `pull-requests` | pull_request, pr_check, pr_activity |
+| `feature-flags` | fme_workspace, fme_environment, feature_flag |
+| `gitops` | gitops_agent, gitops_application, gitops_cluster, gitops_repository, gitops_applicationset, gitops_repo_credential, gitops_app_resource_tree |
+| `chaos` | chaos_experiment, chaos_probe, chaos_experiment_template, chaos_infrastructure, chaos_experiment_run, chaos_loadtest |
+| `ccm` | cost_perspective, cost_breakdown, cost_timeseries, cost_summary, cost_recommendation, cost_anomaly, cost_category |
 | `sei` | sei_metric |
-| `scs` | artifact_security, code_repo_security |
+| `scs` | artifact_security, code_repo_security, scs_sbom, scs_artifact_component, scs_compliance_result, scs_opa_policy |
 | `sto` | security_issue, security_exemption |
+| `access_control` | user, user_group, service_account, role, role_assignment, resource_group, permission |
 
 ## Architecture
 
@@ -412,13 +475,13 @@ Available toolset names:
                           |  MCP (stdio)
                  +--------v---------+
                  |    MCP Server     |
-                 |  9 Generic Tools  |
+                 | 10 Generic Tools  |
                  +--------+---------+
                           |
                  +--------v---------+
                  |    Registry       |  <-- Declarative resource definitions
-                 |  22 Toolsets      |      (data files, not code)
-                 |  38 Resource Types|
+                 |  23 Toolsets      |      (data files, not code)
+                 |  68+ Resource Types|
                  +--------+---------+
                           |
                  +--------v---------+
@@ -434,11 +497,15 @@ Available toolset names:
 
 1. **Tools** are generic verbs: `harness_list`, `harness_get`, etc. They accept a `resource_type` parameter that routes to the correct API endpoint.
 
-2. **The Registry** maps each `resource_type` to a `ResourceDefinition` -- a declarative data structure specifying the HTTP method, URL path, path/query parameter mappings, and response extraction logic.
+2. **The Registry** maps each `resource_type` to a `ResourceDefinition` — a declarative data structure specifying the HTTP method, URL path, path/query parameter mappings, and response extraction logic.
 
 3. **Dispatch** resolves the resource definition, builds the HTTP request (path substitution, query params, scope injection), calls the Harness API through `HarnessClient`, and extracts the relevant response data.
 
 4. **Toolset filtering** (`HARNESS_TOOLSETS`) controls which resource definitions are loaded into the registry at startup.
+
+5. **Deep links** are automatically appended to responses, providing direct Harness UI URLs for every resource.
+
+6. **Compact mode** strips verbose metadata from list results, keeping only actionable fields (identity, status, type, timestamps, deep links) to minimize token usage.
 
 ### Adding a New Resource Type
 
@@ -484,21 +551,6 @@ export const myModuleToolset: ToolsetDefinition = {
 
 Then import it in `src/registry/index.ts` and add it to the `ALL_TOOLSETS` array. No changes needed to any tool files.
 
-## MCP Resources
-
-| Resource URI | Description | MIME Type |
-|--------------|-------------|-----------|
-| `pipeline:///{pipelineId}` | Pipeline YAML definition | `application/x-yaml` |
-| `pipeline:///{orgId}/{projectId}/{pipelineId}` | Pipeline YAML (with explicit scope) | `application/x-yaml` |
-| `executions:///recent` | Last 10 pipeline execution summaries | `application/json` |
-
-## MCP Prompts
-
-| Prompt | Description | Parameters |
-|--------|-------------|------------|
-| `debug-pipeline-failure` | Analyze a failed execution: gathers execution details, pipeline YAML, and logs via `harness_diagnose`, then provides root cause analysis and suggested fixes | `executionId` (required), `projectId` (optional) |
-| `create-pipeline` | Generate a new pipeline YAML from natural language requirements, reviewing existing resources for context before presenting the YAML for confirmation | `description` (required), `projectId` (optional) |
-
 ## Development
 
 ```bash
@@ -536,8 +588,10 @@ src/
     toolsets/                        # One file per toolset (declarative data)
       pipelines.ts
       services.ts
+      ccm.ts
+      access-control.ts
       ...
-  tools/                            # 9 generic MCP tools
+  tools/                            # 10 generic MCP tools
     harness-list.ts
     harness-get.ts
     harness-create.ts
@@ -547,23 +601,36 @@ src/
     harness-search.ts
     harness-diagnose.ts
     harness-describe.ts
+    harness-status.ts
   resources/                        # MCP resource providers
     pipeline-yaml.ts
     execution-summary.ts
   prompts/                          # MCP prompt templates
     debug-pipeline.ts
     create-pipeline.ts
+    optimize-costs.ts
+    security-review.ts
+    onboard-service.ts
   utils/
     errors.ts                       # Error normalization
     logger.ts                       # stderr-only logger
     rate-limiter.ts                 # Client-side rate limiting
     deep-links.ts                   # Harness UI deep link builder
     response-formatter.ts           # Consistent MCP response formatting
+    compact.ts                      # Compact list output for token efficiency
+tests/
+  config.test.ts                    # Config schema validation tests
+  utils/
+    response-formatter.test.ts
+    deep-links.test.ts
+    errors.test.ts
+  registry/
+    registry.test.ts                # Registry loading, filtering, dispatch tests
 ```
 
 ## Safety
 
-- **Secrets are never exposed.** The `secret` resource type returns metadata only (name, type, scope) -- secret values are never included in any response.
+- **Secrets are never exposed.** The `secret` resource type returns metadata only (name, type, scope) — secret values are never included in any response.
 - **Write operations require confirmation.** `harness_create`, `harness_update`, `harness_delete`, and `harness_execute` all require `confirmation: true` before proceeding.
 - **Rate limiting.** The client enforces a 10 requests/second limit to avoid hitting Harness API rate limits.
 - **Retries with backoff.** Transient failures (HTTP 429, 5xx) are retried with exponential backoff and jitter.
