@@ -25,7 +25,7 @@ export const templatesToolset: ToolsetDefinition = {
       toolset: "templates",
       scope: "project",
       identifierFields: ["template_id"],
-      listFilterFields: ["search_term", "template_type"],
+      listFilterFields: ["search_term", "template_type", "template_list_type"],
       deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/setup/resources/templates",
       operations: {
         list: {
@@ -35,7 +35,7 @@ export const templatesToolset: ToolsetDefinition = {
             search_term: "searchTerm",
             page: "page",
             size: "size",
-            template_type: "templateListType",
+            template_list_type: "templateListType",
           },
           bodyBuilder: (input) => ({
             filterType: "Template",

@@ -34,13 +34,14 @@ export function registerListTool(server: McpServer, registry: Registry, client: 
       artifact_id: z.string().describe("Artifact identifier for version sub-resources").optional(),
       environment: z.string().describe("Feature flag environment").optional(),
       severity: z.string().describe("Security severity filter").optional(),
-      template_type: z.string().describe("Template entity type for template list (e.g. Pipeline, Stage, Step). Required for resource_type=template.").optional(),
+      template_type: z.string().describe("Template entity type for template list (e.g. Pipeline, Stage, Step). Optional filter for resource_type=template.").optional(),
+      template_list_type: z.string().describe("Template list type: Stable, LastUpdated, or All. Used for resource_type=template.").optional(),
     },
     async (args) => {
       try {
         const input = { ...args } as Record<string, unknown>;
-        if (args.resource_type === "template" && input.template_type === undefined) {
-          input.template_type = "Pipeline";
+        if (args.resource_type === "template" && input.template_list_type === undefined) {
+          input.template_list_type = "All";
         }
         const result = await registry.dispatch(client, args.resource_type, "list", input);
 
