@@ -5,8 +5,10 @@ import type { Config } from "../config.js";
 
 import { registerPipelineYamlResource } from "./pipeline-yaml.js";
 import { registerExecutionSummaryResource } from "./execution-summary.js";
+import { registerHarnessSchemaResource } from "./harness-schema.js";
 
 export function registerAllResources(server: McpServer, registry: Registry, client: HarnessClient, config: Config): void {
   registerPipelineYamlResource(server, registry, client, config);
   registerExecutionSummaryResource(server, registry, client, config);
+  registerHarnessSchemaResource(server);
 }

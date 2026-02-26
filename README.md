@@ -464,6 +464,9 @@ The server exposes 10 MCP tools. Every tool accepts `org_id` and `project_id` as
 | `pipeline:///{pipelineId}` | Pipeline YAML definition | `application/x-yaml` |
 | `pipeline:///{orgId}/{projectId}/{pipelineId}` | Pipeline YAML (with explicit scope) | `application/x-yaml` |
 | `executions:///recent` | Last 10 pipeline execution summaries | `application/json` |
+| `schema:///pipeline` | Harness pipeline JSON Schema | `application/schema+json` |
+| `schema:///template` | Harness template JSON Schema | `application/schema+json` |
+| `schema:///trigger` | Harness trigger JSON Schema | `application/schema+json` |
 
 ## Toolset Filtering
 
