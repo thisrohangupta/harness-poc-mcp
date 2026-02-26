@@ -8,7 +8,7 @@ import { toMcpError } from "../utils/errors.js";
 export function registerCreateTool(server: McpServer, registry: Registry, client: HarnessClient): void {
   server.tool(
     "harness_create",
-    "Create a new Harness resource. Requires confirmation=true to proceed.",
+    "Create a new Harness resource. Requires confirmation=true to proceed. For pipelines, templates, and triggers — read the schema resource first (e.g. schema:///pipeline) to understand the required body format.",
     {
       resource_type: z.string().describe("The type of resource to create (e.g. pipeline, service, environment, connector, trigger)"),
       body: z.record(z.unknown()).describe("The resource definition body (varies by resource type — typically the YAML or JSON spec)"),

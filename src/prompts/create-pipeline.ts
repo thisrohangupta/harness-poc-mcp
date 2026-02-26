@@ -19,11 +19,12 @@ export function registerCreatePipelinePrompt(server: McpServer): void {
 ${description}
 
 Steps:
-1. First call harness_describe with resource_type="pipeline" to understand the pipeline schema
-2. If helpful, call harness_list with resource_type="pipeline"${projectId ? ` and project_id="${projectId}"` : ""} to see existing pipeline patterns
-3. Also check available connectors (harness_list resource_type="connector"), services (harness_list resource_type="service"), and environments (harness_list resource_type="environment")
-4. Generate the pipeline YAML
-5. Present the YAML for review before creating
+1. Read the pipeline JSON Schema resource (schema:///pipeline) to understand the required pipeline structure and fields
+2. Call harness_describe with resource_type="pipeline" to understand available operations
+3. If helpful, call harness_list with resource_type="pipeline"${projectId ? ` and project_id="${projectId}"` : ""} to see existing pipeline patterns
+4. Also check available connectors (harness_list resource_type="connector"), services (harness_list resource_type="service"), and environments (harness_list resource_type="environment")
+5. Generate the pipeline YAML conforming to the schema
+6. Present the YAML for review before creating
 
 Do NOT create the pipeline until I confirm — just show me the YAML first.`,
         },
