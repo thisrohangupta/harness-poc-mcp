@@ -203,6 +203,7 @@ export const pipelinesToolset: ToolsetDefinition = {
       toolset: "pipelines",
       scope: "project",
       identifierFields: ["pipeline_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/pipelines/{pipelineIdentifier}/pipeline-studio",
       operations: {
         get: {
           method: "GET",

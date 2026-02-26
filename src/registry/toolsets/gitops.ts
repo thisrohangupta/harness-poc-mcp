@@ -205,6 +205,7 @@ export const gitopsToolset: ToolsetDefinition = {
       toolset: "gitops",
       scope: "project",
       identifierFields: ["agent_id", "app_name"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/applications/{appName}",
       operations: {
         list: {
           method: "GET",
@@ -226,6 +227,7 @@ export const gitopsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["agent_id", "app_name"],
       listFilterFields: ["pod_name", "namespace", "container", "tail_lines"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/applications/{appName}",
       operations: {
         get: {
           method: "GET",
@@ -252,6 +254,7 @@ export const gitopsToolset: ToolsetDefinition = {
       toolset: "gitops",
       scope: "project",
       identifierFields: ["agent_id", "app_name"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/applications/{appName}",
       operations: {
         list: {
           method: "GET",
@@ -273,6 +276,7 @@ export const gitopsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["agent_id", "app_name"],
       listFilterFields: ["namespace", "resource_name", "kind"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops/applications/{appName}",
       operations: {
         list: {
           method: "GET",
@@ -298,6 +302,7 @@ export const gitopsToolset: ToolsetDefinition = {
       toolset: "gitops",
       scope: "project",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/gitops",
       operations: {
         get: {
           method: "GET",

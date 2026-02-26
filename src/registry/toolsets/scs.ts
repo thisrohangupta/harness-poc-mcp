@@ -137,6 +137,7 @@ export const scsToolset: ToolsetDefinition = {
       toolset: "scs",
       scope: "project",
       identifierFields: ["artifact_id", "component_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/supply-chain/artifacts/{artifactId}",
       operations: {
         get: {
           method: "GET",
@@ -157,6 +158,7 @@ export const scsToolset: ToolsetDefinition = {
       toolset: "scs",
       scope: "project",
       identifierFields: ["artifact_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/supply-chain/artifacts/{artifactId}",
       operations: {
         get: {
           method: "GET",

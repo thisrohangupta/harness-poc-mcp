@@ -18,6 +18,7 @@ export const settingsToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: [],
       listFilterFields: ["category", "group", "include_parent_scopes"],
+      deepLinkTemplate: "/ng/account/{accountId}/settings",
       operations: {
         list: {
           method: "GET",

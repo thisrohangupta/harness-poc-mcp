@@ -123,6 +123,7 @@ export const chaosToolset: ToolsetDefinition = {
       toolset: "chaos",
       scope: "project",
       identifierFields: ["experiment_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/chaos/experiments/{experimentId}",
       operations: {
         list: {
           method: "GET",
@@ -140,6 +141,7 @@ export const chaosToolset: ToolsetDefinition = {
       toolset: "chaos",
       scope: "project",
       identifierFields: ["experiment_id", "run_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/chaos/experiments/{experimentId}",
       operations: {
         list: {
           method: "POST",

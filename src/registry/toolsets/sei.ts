@@ -53,6 +53,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -71,6 +72,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -89,6 +91,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -107,6 +110,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -125,6 +129,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -143,6 +148,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "granularity"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/dora",
       operations: {
         get: {
           method: "POST",
@@ -162,6 +168,7 @@ export const seiToolset: ToolsetDefinition = {
       toolset: "sei",
       scope: "account",
       identifierFields: ["team_ref_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/configuration/teams",
       operations: {
         list: {
           method: "GET",
@@ -185,6 +192,7 @@ export const seiToolset: ToolsetDefinition = {
       toolset: "sei",
       scope: "account",
       identifierFields: ["team_ref_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/configuration/teams",
       operations: {
         list: {
           method: "GET",
@@ -202,6 +210,7 @@ export const seiToolset: ToolsetDefinition = {
       toolset: "sei",
       scope: "account",
       identifierFields: ["team_ref_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/configuration/teams",
       operations: {
         list: {
           method: "GET",
@@ -221,6 +230,7 @@ export const seiToolset: ToolsetDefinition = {
       toolset: "sei",
       scope: "account",
       identifierFields: ["org_tree_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/configuration/org-trees",
       operations: {
         list: {
           method: "GET",
@@ -246,6 +256,7 @@ export const seiToolset: ToolsetDefinition = {
       toolset: "sei",
       scope: "account",
       identifierFields: ["profile_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/business-alignment",
       operations: {
         list: {
           method: "GET",
@@ -277,6 +288,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         get: {
           method: "POST",
@@ -299,6 +311,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         list: {
           method: "POST",
@@ -321,6 +334,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         get: {
           method: "POST",
@@ -343,6 +357,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         list: {
           method: "POST",
@@ -365,6 +380,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end", "metric_type"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         get: {
           method: "POST",
@@ -387,6 +403,7 @@ export const seiToolset: ToolsetDefinition = {
       scope: "account",
       identifierFields: [],
       listFilterFields: ["team_ref_id", "date_start", "date_end"],
+      deepLinkTemplate: "/ng/account/{accountId}/module/sei/insights/ai-coding",
       operations: {
         list: {
           method: "POST",

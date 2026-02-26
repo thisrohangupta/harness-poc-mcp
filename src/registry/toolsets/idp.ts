@@ -111,6 +111,7 @@ export const idpToolset: ToolsetDefinition = {
       toolset: "idp",
       scope: "account",
       identifierFields: ["scorecard_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/idp/scorecards/{scorecardIdentifier}",
       operations: {
         get: {
           method: "GET",
@@ -128,6 +129,7 @@ export const idpToolset: ToolsetDefinition = {
       toolset: "idp",
       scope: "account",
       identifierFields: ["check_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/idp/scorecards",
       operations: {
         get: {
           method: "GET",

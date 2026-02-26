@@ -719,6 +719,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       scope: "account",
       identifierFields: [],
       listFilterFields: ["start_time", "end_time", "group_by"],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/overview",
       operations: {
         get: {
           method: "GET",
@@ -802,6 +803,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/recommendations",
       operations: {
         get: {
           method: "POST",
@@ -823,6 +825,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/recommendations",
       operations: {
         list: {
           method: "POST",
@@ -844,6 +847,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: ["type_path"],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/recommendations",
       operations: {
         get: {
           method: "GET",
@@ -866,6 +870,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       scope: "account",
       identifierFields: [],
       listFilterFields: ["limit", "offset"],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/anomaly-detection",
       operations: {
         list: {
           method: "POST",
@@ -894,6 +899,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/commitment-orchestration",
       operations: {
         get: {
           method: "POST",
@@ -916,6 +922,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/commitment-orchestration",
       operations: {
         get: {
           method: "POST",
@@ -938,6 +945,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/commitment-orchestration",
       operations: {
         get: {
           method: "POST",
@@ -960,6 +968,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: [],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/commitment-orchestration",
       operations: {
         get: {
           method: "POST",
@@ -982,6 +991,7 @@ All the separate anomaly tools from the official server (list, list_all, list_ig
       toolset: "ccm",
       scope: "account",
       identifierFields: ["cloud_account_id"],
+      deepLinkTemplate: "/ng/account/{accountId}/ce/commitment-orchestration",
       operations: {
         get: {
           method: "POST",
