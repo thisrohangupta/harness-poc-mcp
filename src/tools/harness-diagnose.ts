@@ -1,0 +1,75 @@
+import { z } from "zod";
+import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { Registry } from "../registry/index.js";
+import type { HarnessClient } from "../client/harness-client.js";
+import { jsonResult, errorResult } from "../utils/response-formatter.js";
+import { toMcpError } from "../utils/errors.js";
+import { createLogger } from "../utils/logger.js";
+
+const log = createLogger("diagnose");
+
+export function registerDiagnoseTool(server: McpServer, registry: Registry, client: HarnessClient): void {
+  server.tool(
+    "harness_diagnose",
+    "Diagnose a pipeline execution failure. Aggregates execution details, pipeline YAML, and execution logs into a single diagnostic payload for analysis.",
+    {
+      execution_id: z.string().describe("The pipeline execution ID to diagnose"),
+      org_id: z.string().describe("Organization identifier (overrides default)").optional(),
+      project_id: z.string().describe("Project identifier (overrides default)").optional(),
+      include_yaml: z.boolean().describe("Include the full pipeline YAML definition").default(true).optional(),
+      include_logs: z.boolean().describe("Include execution step logs").default(true).optional(),
+    },
+    async (args) => {
+      try {
+        const input: Record<string, unknown> = { ...args };
+        const diagnostic: Record<string, unknown> = {};
+
+        // 1. Get execution details
+        log.info("Fetching execution details", { executionId: args.execution_id });
+        try {
+          const execution = await registry.dispatch(client, "execution", "get", input);
+          diagnostic.execution = execution;
+
+          // Extract pipeline ID from execution if available
+          const exec = execution as Record<string, unknown>;
+          const pipelineExec = exec?.pipelineExecutionSummary as Record<string, unknown> | undefined;
+          const pipelineId = pipelineExec?.pipelineIdentifier as string | undefined;
+
+          // 2. Get pipeline YAML if requested and pipeline ID available
+          if (args.include_yaml !== false && pipelineId) {
+            try {
+              const pipeline = await registry.dispatch(client, "pipeline", "get", {
+                ...input,
+                pipeline_id: pipelineId,
+              });
+              diagnostic.pipeline = pipeline;
+            } catch (err) {
+              log.warn("Failed to fetch pipeline YAML", { error: String(err) });
+              diagnostic.pipeline_error = String(err);
+            }
+          }
+        } catch (err) {
+          diagnostic.execution_error = String(err);
+        }
+
+        // 3. Get execution logs if requested
+        if (args.include_logs !== false) {
+          try {
+            const logs = await registry.dispatch(client, "execution_log", "get", input);
+            diagnostic.logs = logs;
+          } catch (err) {
+            log.warn("Failed to fetch execution logs", { error: String(err) });
+            diagnostic.logs_error = String(err);
+          }
+        }
+
+        return jsonResult(diagnostic);
+      } catch (err) {
+        if (err instanceof Error) {
+          return errorResult(err.message);
+        }
+        throw toMcpError(err);
+      }
+    },
+  );
+}

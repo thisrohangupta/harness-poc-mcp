@@ -1,0 +1,574 @@
+# Harness MCP Server
+
+An MCP (Model Context Protocol) server that gives AI agents full access to the Harness.io platform through 9 consolidated tools and 38 resource types.
+
+## Why This Exists
+
+The naive approach to building an MCP server for a platform like Harness is 1:1 API-to-tool mapping: one tool per endpoint. That path leads to 240+ tools, which is an anti-pattern -- LLMs degrade at tool selection when the tool count is high, context windows fill with schema definitions, and every new API endpoint requires a new tool.
+
+This server takes a different approach: **registry-based dispatch**. Instead of hundreds of individual tools, there are 9 generic tools (`harness_list`, `harness_get`, `harness_create`, `harness_update`, `harness_delete`, `harness_execute`, `harness_search`, `harness_diagnose`, `harness_describe`) that operate on any of 38 resource types. Adding a new Harness resource means adding a declarative data file -- no new tool registration, no schema changes, no prompt updates.
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 20+
+- pnpm
+
+### Install and Build
+
+```bash
+git clone <repo-url> harness-mcp-server
+cd harness-mcp-server
+pnpm install
+pnpm build
+```
+
+### Configure
+
+Copy `.env.example` to `.env` and fill in your Harness credentials:
+
+```bash
+cp .env.example .env
+```
+
+At minimum, set `HARNESS_API_KEY` and `HARNESS_ACCOUNT_ID`.
+
+### Run
+
+```bash
+# Stdio transport (for local AI clients)
+pnpm start
+
+# Or directly
+node build/index.js stdio
+
+# Test with MCP Inspector
+pnpm inspect
+```
+
+### Client Configuration
+
+**Claude Desktop** (`claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "harness": {
+      "command": "node",
+      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "env": {
+        "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
+        "HARNESS_ACCOUNT_ID": "your-account-id",
+        "HARNESS_DEFAULT_ORG_ID": "default",
+        "HARNESS_DEFAULT_PROJECT_ID": "your-project"
+      }
+    }
+  }
+}
+```
+
+**Cursor** (`.cursor/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "harness": {
+      "command": "node",
+      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "env": {
+        "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
+        "HARNESS_ACCOUNT_ID": "your-account-id",
+        "HARNESS_DEFAULT_ORG_ID": "default",
+        "HARNESS_DEFAULT_PROJECT_ID": "your-project"
+      }
+    }
+  }
+}
+```
+
+**Windsurf** (`~/.windsurf/mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "harness": {
+      "command": "node",
+      "args": ["/absolute/path/to/harness-mcp-server/build/index.js", "stdio"],
+      "env": {
+        "HARNESS_API_KEY": "pat.xxx.xxx.xxx",
+        "HARNESS_ACCOUNT_ID": "your-account-id",
+        "HARNESS_DEFAULT_ORG_ID": "default",
+        "HARNESS_DEFAULT_PROJECT_ID": "your-project"
+      }
+    }
+  }
+}
+```
+
+## Configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `HARNESS_API_KEY` | Yes | -- | Harness personal access token or service account token |
+| `HARNESS_ACCOUNT_ID` | Yes | -- | Harness account identifier |
+| `HARNESS_BASE_URL` | No | `https://app.harness.io` | Base URL (override for self-managed Harness) |
+| `HARNESS_DEFAULT_ORG_ID` | No | `default` | Default organization identifier |
+| `HARNESS_DEFAULT_PROJECT_ID` | No | -- | Default project identifier |
+| `HARNESS_API_TIMEOUT_MS` | No | `30000` | HTTP request timeout in milliseconds |
+| `HARNESS_MAX_RETRIES` | No | `3` | Retry count for transient failures (429, 5xx) |
+| `LOG_LEVEL` | No | `info` | Log verbosity: `debug`, `info`, `warn`, `error` |
+| `HARNESS_TOOLSETS` | No | *(all)* | Comma-separated list of enabled toolsets (see [Toolset Filtering](#toolset-filtering)) |
+
+## Tools Reference
+
+The server exposes 9 MCP tools. Every tool accepts `org_id` and `project_id` as optional overrides -- if omitted, they fall back to `HARNESS_DEFAULT_ORG_ID` and `HARNESS_DEFAULT_PROJECT_ID`.
+
+| Tool | Description |
+|------|-------------|
+| `harness_describe` | Discover available resource types, operations, and fields. No API call -- returns local registry metadata. |
+| `harness_list` | List resources of a given type with filtering, search, and pagination. |
+| `harness_get` | Get a single resource by its identifier. |
+| `harness_create` | Create a new resource. Requires `confirmation: true`. |
+| `harness_update` | Update an existing resource. Requires `confirmation: true`. |
+| `harness_delete` | Delete a resource. Requires `confirmation: true`. Destructive. |
+| `harness_execute` | Execute an action on a resource (run pipeline, toggle flag, sync app). Requires `confirmation: true`. |
+| `harness_search` | Search across multiple resource types in parallel with a single query. |
+| `harness_diagnose` | Aggregate execution details, pipeline YAML, and logs into a single diagnostic payload. |
+
+### Tool Examples
+
+**Discover what resources are available:**
+
+```json
+{ "resource_type": "pipeline" }
+```
+
+**List pipelines in a project:**
+
+```json
+{ "resource_type": "pipeline", "search_term": "deploy", "size": 10 }
+```
+
+**Get a specific service:**
+
+```json
+{ "resource_type": "service", "resource_id": "my-service-id" }
+```
+
+**Run a pipeline:**
+
+```json
+{
+  "resource_type": "pipeline",
+  "action": "run",
+  "resource_id": "my-pipeline",
+  "confirmation": true,
+  "inputs": { "tag": "v1.2.3" }
+}
+```
+
+**Toggle a feature flag:**
+
+```json
+{
+  "resource_type": "feature_flag",
+  "action": "toggle",
+  "resource_id": "new_checkout_flow",
+  "enable": true,
+  "environment": "production",
+  "confirmation": true
+}
+```
+
+**Search across all resource types:**
+
+```json
+{ "query": "payment-service" }
+```
+
+**Diagnose a failed execution:**
+
+```json
+{ "execution_id": "abc123XYZ", "include_yaml": true, "include_logs": true }
+```
+
+**Create a connector:**
+
+```json
+{
+  "resource_type": "connector",
+  "body": { "connector": { "name": "My Docker Hub", "identifier": "my_docker", "type": "DockerRegistry" } },
+  "confirmation": true
+}
+```
+
+**Delete a trigger:**
+
+```json
+{
+  "resource_type": "trigger",
+  "resource_id": "nightly-trigger",
+  "pipeline_id": "my-pipeline",
+  "confirmation": true
+}
+```
+
+## Resource Types
+
+38 resource types organized across 22 toolsets. Each resource type supports a subset of CRUD operations and optional execute actions.
+
+### Pipelines
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `pipeline` | x | x | x | x | x | `run`, `retry` |
+| `execution` | x | x | | | | `interrupt` |
+| `trigger` | x | x | x | x | x | |
+| `input_set` | x | x | | | | |
+
+### Services
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `service` | x | x | x | x | x | |
+
+### Environments
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `environment` | x | x | x | x | x | |
+
+### Connectors
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `connector` | x | x | x | x | x | `test_connection` |
+
+### Infrastructure
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `infrastructure` | x | x | x | x | x | |
+
+### Secrets
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `secret` | x | x | | | | |
+
+### Execution Logs
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `execution_log` | | x | | | | |
+
+### Audit Trail
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `audit_event` | x | | | | | |
+
+### Delegates
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `delegate` | x | | | | | |
+| `delegate_token` | x | | | | | |
+
+### Code Repositories
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `repository` | x | x | | | | |
+
+### Artifact Registries
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `registry` | x | x | | | | |
+| `artifact` | x | | | | | |
+| `artifact_version` | x | | | | | |
+
+### Templates
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `template` | x | x | | | | |
+
+### Dashboards
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `dashboard` | x | x | | | | |
+
+### Internal Developer Portal (IDP)
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `idp_entity` | x | | | | | |
+| `scorecard` | x | x | | | | |
+
+### Pull Requests
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `pull_request` | x | x | | | | |
+
+### Feature Flags
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `feature_flag` | x | x | x | | x | `toggle` |
+
+### GitOps
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `gitops_agent` | x | x | | | | |
+| `gitops_application` | x | x | | | | `sync` |
+| `gitops_cluster` | x | | | | | |
+| `gitops_repository` | x | | | | | |
+
+### Chaos Engineering
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `chaos_experiment` | x | x | | | | `run` |
+| `chaos_probe` | x | | | | | |
+
+### Cloud Cost Management (CCM)
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `cost_perspective` | x | x | | | | |
+| `cost_recommendation` | x | | | | | |
+| `cost_anomaly` | x | | | | | |
+| `cost_category` | x | | | | | |
+
+### Software Engineering Insights (SEI)
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `sei_metric` | x | | | | | |
+
+### Software Supply Chain Assurance (SCS)
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `artifact_security` | x | | | | | |
+| `code_repo_security` | x | | | | | |
+
+### Security Testing Orchestration (STO)
+
+| Resource Type | List | Get | Create | Update | Delete | Execute Actions |
+|---------------|:----:|:---:|:------:|:------:|:------:|-----------------|
+| `security_issue` | x | x | | | | |
+| `security_exemption` | x | | | | | |
+
+## Toolset Filtering
+
+By default, all 22 toolsets (and their 38 resource types) are enabled. Use `HARNESS_TOOLSETS` to expose only the toolsets you need. This reduces the resource types the LLM sees, improving tool selection accuracy.
+
+```bash
+# Only expose pipelines, services, and connectors
+HARNESS_TOOLSETS=pipelines,services,connectors
+```
+
+Available toolset names:
+
+| Toolset | Resource Types |
+|---------|---------------|
+| `pipelines` | pipeline, execution, trigger, input_set |
+| `services` | service |
+| `environments` | environment |
+| `connectors` | connector |
+| `infrastructure` | infrastructure |
+| `secrets` | secret |
+| `logs` | execution_log |
+| `audit` | audit_event |
+| `delegates` | delegate, delegate_token |
+| `repositories` | repository |
+| `registries` | registry, artifact, artifact_version |
+| `templates` | template |
+| `dashboards` | dashboard |
+| `idp` | idp_entity, scorecard |
+| `pull-requests` | pull_request |
+| `feature-flags` | feature_flag |
+| `gitops` | gitops_agent, gitops_application, gitops_cluster, gitops_repository |
+| `chaos` | chaos_experiment, chaos_probe |
+| `ccm` | cost_perspective, cost_recommendation, cost_anomaly, cost_category |
+| `sei` | sei_metric |
+| `scs` | artifact_security, code_repo_security |
+| `sto` | security_issue, security_exemption |
+
+## Architecture
+
+```
+                 +------------------+
+                 |   AI Agent       |
+                 |  (Claude, etc.)  |
+                 +--------+---------+
+                          |  MCP (stdio)
+                 +--------v---------+
+                 |    MCP Server     |
+                 |  9 Generic Tools  |
+                 +--------+---------+
+                          |
+                 +--------v---------+
+                 |    Registry       |  <-- Declarative resource definitions
+                 |  22 Toolsets      |      (data files, not code)
+                 |  38 Resource Types|
+                 +--------+---------+
+                          |
+                 +--------v---------+
+                 |  HarnessClient    |  <-- Auth, retry, rate limiting
+                 +--------+---------+
+                          |  HTTPS
+                 +--------v---------+
+                 |  Harness REST API |
+                 +-------------------+
+```
+
+### How It Works
+
+1. **Tools** are generic verbs: `harness_list`, `harness_get`, etc. They accept a `resource_type` parameter that routes to the correct API endpoint.
+
+2. **The Registry** maps each `resource_type` to a `ResourceDefinition` -- a declarative data structure specifying the HTTP method, URL path, path/query parameter mappings, and response extraction logic.
+
+3. **Dispatch** resolves the resource definition, builds the HTTP request (path substitution, query params, scope injection), calls the Harness API through `HarnessClient`, and extracts the relevant response data.
+
+4. **Toolset filtering** (`HARNESS_TOOLSETS`) controls which resource definitions are loaded into the registry at startup.
+
+### Adding a New Resource Type
+
+Create a new file in `src/registry/toolsets/` or add a resource to an existing toolset:
+
+```typescript
+// src/registry/toolsets/my-module.ts
+import type { ToolsetDefinition } from "../types.js";
+
+export const myModuleToolset: ToolsetDefinition = {
+  name: "my-module",
+  displayName: "My Module",
+  description: "Description of the module",
+  resources: [
+    {
+      resourceType: "my_resource",
+      displayName: "My Resource",
+      description: "What this resource represents",
+      toolset: "my-module",
+      scope: "project",                    // "project" | "org" | "account"
+      identifierFields: ["resource_id"],
+      listFilterFields: ["search_term"],
+      operations: {
+        list: {
+          method: "GET",
+          path: "/my-module/api/resources",
+          queryParams: { search_term: "search", page: "page", size: "size" },
+          responseExtractor: (raw) => raw,
+          description: "List resources",
+        },
+        get: {
+          method: "GET",
+          path: "/my-module/api/resources/{resourceId}",
+          pathParams: { resource_id: "resourceId" },
+          responseExtractor: (raw) => raw,
+          description: "Get resource details",
+        },
+      },
+    },
+  ],
+};
+```
+
+Then import it in `src/registry/index.ts` and add it to the `ALL_TOOLSETS` array. No changes needed to any tool files.
+
+## MCP Resources
+
+| Resource URI | Description | MIME Type |
+|--------------|-------------|-----------|
+| `pipeline:///{pipelineId}` | Pipeline YAML definition | `application/x-yaml` |
+| `pipeline:///{orgId}/{projectId}/{pipelineId}` | Pipeline YAML (with explicit scope) | `application/x-yaml` |
+| `executions:///recent` | Last 10 pipeline execution summaries | `application/json` |
+
+## MCP Prompts
+
+| Prompt | Description | Parameters |
+|--------|-------------|------------|
+| `debug-pipeline-failure` | Analyze a failed execution: gathers execution details, pipeline YAML, and logs via `harness_diagnose`, then provides root cause analysis and suggested fixes | `executionId` (required), `projectId` (optional) |
+| `create-pipeline` | Generate a new pipeline YAML from natural language requirements, reviewing existing resources for context before presenting the YAML for confirmation | `description` (required), `projectId` (optional) |
+
+## Development
+
+```bash
+# Build
+pnpm build
+
+# Watch mode
+pnpm dev
+
+# Type check
+pnpm typecheck
+
+# Run tests
+pnpm test
+
+# Watch tests
+pnpm test:watch
+
+# Interactive MCP Inspector
+pnpm inspect
+```
+
+### Project Structure
+
+```
+src/
+  index.ts                          # Entrypoint, transport setup
+  config.ts                         # Env var validation (Zod)
+  client/
+    harness-client.ts               # HTTP client (auth, retry, rate limiting)
+    types.ts                        # Shared API types
+  registry/
+    index.ts                        # Registry class + dispatch logic
+    types.ts                        # ResourceDefinition, ToolsetDefinition, etc.
+    toolsets/                        # One file per toolset (declarative data)
+      pipelines.ts
+      services.ts
+      ...
+  tools/                            # 9 generic MCP tools
+    harness-list.ts
+    harness-get.ts
+    harness-create.ts
+    harness-update.ts
+    harness-delete.ts
+    harness-execute.ts
+    harness-search.ts
+    harness-diagnose.ts
+    harness-describe.ts
+  resources/                        # MCP resource providers
+    pipeline-yaml.ts
+    execution-summary.ts
+  prompts/                          # MCP prompt templates
+    debug-pipeline.ts
+    create-pipeline.ts
+  utils/
+    errors.ts                       # Error normalization
+    logger.ts                       # stderr-only logger
+    rate-limiter.ts                 # Client-side rate limiting
+    deep-links.ts                   # Harness UI deep link builder
+    response-formatter.ts           # Consistent MCP response formatting
+```
+
+## Safety
+
+- **Secrets are never exposed.** The `secret` resource type returns metadata only (name, type, scope) -- secret values are never included in any response.
+- **Write operations require confirmation.** `harness_create`, `harness_update`, `harness_delete`, and `harness_execute` all require `confirmation: true` before proceeding.
+- **Rate limiting.** The client enforces a 10 requests/second limit to avoid hitting Harness API rate limits.
+- **Retries with backoff.** Transient failures (HTTP 429, 5xx) are retried with exponential backoff and jitter.
+- **No stdout logging.** All logs go to stderr to avoid corrupting the stdio JSON-RPC transport.
+
+## License
+
+Apache 2.0

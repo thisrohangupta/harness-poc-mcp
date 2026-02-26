@@ -1,0 +1,31 @@
+{
+  "name": "harness-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Harness.io CI/CD platform — 9 consolidated tools with registry-based dispatch",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "harness-mcp-server": "build/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node build/index.js stdio",
+    "inspect": "npx @modelcontextprotocol/inspector node build/index.js stdio",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
