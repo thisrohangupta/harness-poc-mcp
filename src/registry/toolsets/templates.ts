@@ -35,6 +35,7 @@ export const templatesToolset: ToolsetDefinition = {
             search_term: "searchTerm",
             page: "page",
             size: "size",
+            template_type: "templateListType",
           },
           bodyBuilder: (input) => ({
             filterType: "Template",

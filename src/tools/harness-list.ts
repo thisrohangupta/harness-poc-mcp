@@ -34,10 +34,15 @@ export function registerListTool(server: McpServer, registry: Registry, client: 
       artifact_id: z.string().describe("Artifact identifier for version sub-resources").optional(),
       environment: z.string().describe("Feature flag environment").optional(),
       severity: z.string().describe("Security severity filter").optional(),
+      template_type: z.string().describe("Template entity type for template list (e.g. Pipeline, Stage, Step). Required for resource_type=template.").optional(),
     },
     async (args) => {
       try {
-        const result = await registry.dispatch(client, args.resource_type, "list", args as Record<string, unknown>);
+        const input = { ...args } as Record<string, unknown>;
+        if (args.resource_type === "template" && input.template_type === undefined) {
+          input.template_type = "Pipeline";
+        }
+        const result = await registry.dispatch(client, args.resource_type, "list", input);
 
         // Apply compact mode — strip verbose metadata from list items
         if (args.compact !== false) {
