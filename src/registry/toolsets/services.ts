@@ -1,4 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
+import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
 
 const ngExtract = (raw: unknown) => {
   const r = raw as { data?: unknown };
@@ -50,14 +51,31 @@ export const servicesToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/servicesV2",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => {
+            const raw = unwrapBody(input.body, "service") ?? input.body;
+            const out = stripNulls(raw);
+            return typeof out === "object" && out !== null ? out : raw;
+          },
           responseExtractor: ngExtract,
           description: "Create a new service",
         },
         update: {
           method: "PUT",
           path: "/ng/api/servicesV2",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => {
+            let raw = unwrapBody(input.body, "service") ?? input.body;
+            if (
+              typeof raw === "object" &&
+              raw !== null &&
+              input.service_id &&
+              ((raw as Record<string, unknown>).identifier === undefined ||
+                (raw as Record<string, unknown>).identifier === null)
+            ) {
+              (raw as Record<string, unknown>).identifier = input.service_id;
+            }
+            const out = stripNulls(raw);
+            return typeof out === "object" && out !== null ? out : raw;
+          },
           responseExtractor: ngExtract,
           description: "Update an existing service",
         },

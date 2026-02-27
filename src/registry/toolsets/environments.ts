@@ -1,4 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
+import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
 
 const ngExtract = (raw: unknown) => {
   const r = raw as { data?: unknown };
@@ -51,14 +52,14 @@ export const environmentsToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/environmentsV2",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => stripNulls(unwrapBody(input.body, "environment")) ?? input.body,
           responseExtractor: ngExtract,
           description: "Create a new environment",
         },
         update: {
           method: "PUT",
           path: "/ng/api/environmentsV2",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => stripNulls(unwrapBody(input.body, "environment")) ?? input.body,
           responseExtractor: ngExtract,
           description: "Update an existing environment",
         },

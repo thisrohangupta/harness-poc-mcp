@@ -1,4 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
+import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
 
 const ngExtract = (raw: unknown) => {
   const r = raw as { data?: unknown };
@@ -51,14 +52,28 @@ export const connectorsToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/connectors",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => {
+            const raw = unwrapBody(input.body, "connector") ?? input.body;
+            const out = stripNulls(raw);
+            return typeof out === "object" && out !== null ? out : raw;
+          },
           responseExtractor: ngExtract,
           description: "Create a new connector",
         },
         update: {
           method: "PUT",
           path: "/ng/api/connectors",
-          bodyBuilder: (input) => input.body,
+          bodyBuilder: (input) => {
+            let raw = unwrapBody(input.body, "connector") ?? input.body;
+            if (typeof raw === "object" && raw !== null) {
+              const r = raw as Record<string, unknown>;
+              if ((r.connectionType === undefined || r.connectionType === null) && r.type) {
+                r.connectionType = r.type;
+              }
+            }
+            const out = stripNulls(raw);
+            return typeof out === "object" && out !== null ? out : raw;
+          },
           responseExtractor: ngExtract,
           description: "Update a connector",
         },
