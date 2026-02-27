@@ -23,7 +23,7 @@ export class HarnessClient {
     this.accountId = config.HARNESS_ACCOUNT_ID;
     this.timeout = config.HARNESS_API_TIMEOUT_MS;
     this.maxRetries = config.HARNESS_MAX_RETRIES;
-    this.rateLimiter = new RateLimiter();
+    this.rateLimiter = new RateLimiter(config.HARNESS_RATE_LIMIT_RPS);
   }
 
   get account(): string {
@@ -102,7 +102,10 @@ export class HarnessClient {
           if (attempt < this.maxRetries) continue;
           throw lastError;
         }
-        throw err;
+        throw new HarnessApiError(
+          `Request failed: ${(err as Error).message ?? String(err)}`,
+          502,
+        );
       }
     }
 

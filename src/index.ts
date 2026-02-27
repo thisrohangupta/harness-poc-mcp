@@ -78,6 +78,8 @@ async function startHttp(config: Config, port: number): Promise<void> {
       return;
     }
 
+    // TODO: Add bearer token auth for remote deployments (HARNESS_HTTP_AUTH_TOKEN)
+
     // Stateless mode only supports POST
     if (req.method !== "POST") {
       res.writeHead(405, {
@@ -94,28 +96,30 @@ async function startHttp(config: Config, port: number): Promise<void> {
       res.setHeader(key, value);
     }
 
+    let server: McpServer | undefined;
+    let transport: StreamableHTTPServerTransport | undefined;
     try {
-      const body = await readBody(req);
+      const maxBodySize = config.HARNESS_MAX_BODY_SIZE_MB * 1024 * 1024;
+      const body = await readBody(req, maxBodySize);
       const parsedBody: unknown = JSON.parse(body);
 
       // Create a fresh server + transport per request (stateless)
-      const server = createHarnessServer(config);
-      const transport = new StreamableHTTPServerTransport({
+      server = createHarnessServer(config);
+      transport = new StreamableHTTPServerTransport({
         sessionIdGenerator: undefined, // stateless mode
       });
 
       await server.connect(transport);
       await transport.handleRequest(req, res, parsedBody);
-
-      // Close after handling — stateless, no persistent session
-      await transport.close();
-      await server.close();
     } catch (err) {
       log.error("Error handling MCP request", { error: String(err) });
       if (!res.headersSent) {
         res.writeHead(400, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Invalid request" }));
       }
+    } finally {
+      await transport?.close?.();
+      await server?.close?.();
     }
   });
 
@@ -140,10 +144,19 @@ async function startHttp(config: Config, port: number): Promise<void> {
   });
 }
 
-function readBody(req: IncomingMessage): Promise<string> {
+function readBody(req: IncomingMessage, maxBodySize: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (chunk: Buffer) => chunks.push(chunk));
+    let totalSize = 0;
+    req.on("data", (chunk: Buffer) => {
+      totalSize += chunk.length;
+      if (totalSize > maxBodySize) {
+        req.destroy();
+        reject(new Error("Request body too large"));
+        return;
+      }
+      chunks.push(chunk);
+    });
     req.on("end", () => resolve(Buffer.concat(chunks).toString()));
     req.on("error", reject);
   });

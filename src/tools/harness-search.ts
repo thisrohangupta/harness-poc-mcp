@@ -54,27 +54,34 @@ export function registerSearchTool(server: McpServer, registry: Registry, client
         const entries: SearchResultEntry[] = [];
         const errors: Record<string, string> = {};
 
-        // Run searches in parallel
-        const promises = targetTypes.map(async (rt) => {
-          try {
-            const result = await registry.dispatch(client, rt, "list", {
-              ...args,
-              search_term: args.query,
-              name: args.query,
-              query: args.query,
-              search: args.query,
-              size: args.max_per_type ?? 5,
-              limit: args.max_per_type ?? 5,
-              page: 0,
-            });
-            return { rt, result, error: null };
-          } catch (err) {
-            log.debug(`Search failed for ${rt}`, { error: String(err) });
-            return { rt, result: null, error: String(err) };
-          }
-        });
+        // Run searches with concurrency limit to avoid overwhelming the API
+        const MAX_CONCURRENCY = 5;
+        const settled: { rt: string; result: unknown; error: string | null }[] = [];
 
-        const settled = await Promise.all(promises);
+        for (let i = 0; i < targetTypes.length; i += MAX_CONCURRENCY) {
+          const batch = targetTypes.slice(i, i + MAX_CONCURRENCY);
+          const batchResults = await Promise.all(
+            batch.map(async (rt) => {
+              try {
+                const result = await registry.dispatch(client, rt, "list", {
+                  ...args,
+                  search_term: args.query,
+                  name: args.query,
+                  query: args.query,
+                  search: args.query,
+                  size: args.max_per_type ?? 5,
+                  limit: args.max_per_type ?? 5,
+                  page: 0,
+                });
+                return { rt, result, error: null };
+              } catch (err) {
+                log.debug(`Search failed for ${rt}`, { error: String(err) });
+                return { rt, result: null, error: String(err) };
+              }
+            }),
+          );
+          settled.push(...batchResults);
+        }
         let totalMatches = 0;
 
         for (const { rt, result, error } of settled) {

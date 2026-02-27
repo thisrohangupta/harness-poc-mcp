@@ -25,6 +25,9 @@ const OWNERSHIP_FIELDS = new Set([
 
 const ALWAYS_KEEP = new Set(["_deepLink"]);
 
+/** Identifier-like key pattern: pipelineIdentifier, projectId, env_id, etc. */
+const IDENTIFIER_PATTERN = /(?:Identifier|Id|_id)$/;
+
 function isWhitelistedKey(key: string): boolean {
   return (
     IDENTITY_FIELDS.has(key) ||
@@ -32,7 +35,8 @@ function isWhitelistedKey(key: string): boolean {
     TYPE_FIELDS.has(key) ||
     OWNERSHIP_FIELDS.has(key) ||
     ALWAYS_KEEP.has(key) ||
-    TIMESTAMP_PATTERN.test(key)
+    TIMESTAMP_PATTERN.test(key) ||
+    IDENTIFIER_PATTERN.test(key)
   );
 }
 

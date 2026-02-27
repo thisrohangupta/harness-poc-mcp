@@ -7,7 +7,7 @@
 /** Recursively remove null and undefined so they are omitted from JSON. */
 export function stripNulls(obj: unknown): unknown {
   if (obj === null || obj === undefined) return undefined;
-  if (Array.isArray(obj)) return obj.map(stripNulls).filter((x) => x !== undefined);
+  if (Array.isArray(obj)) return obj.map((x) => (x === null || x === undefined ? x : stripNulls(x)));
   if (typeof obj === "object") {
     const out: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(obj)) {
