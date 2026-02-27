@@ -15,7 +15,7 @@ export function registerListTool(server: McpServer, registry: Registry, client: 
       org_id: z.string().describe("Organization identifier (overrides default)").optional(),
       project_id: z.string().describe("Project identifier (overrides default)").optional(),
       page: z.number().describe("Page number, 0-indexed").default(0).optional(),
-      size: z.number().describe("Page size (max 100)").default(20).optional(),
+      size: z.number().min(1).max(100).describe("Page size (1–100)").default(20).optional(),
       search_term: z.string().describe("Filter results by name or keyword").optional(),
       compact: z.boolean().describe("Strip verbose metadata from list items, keeping only essential fields (default true)").default(true).optional(),
       // Additional filter fields passed through dynamically

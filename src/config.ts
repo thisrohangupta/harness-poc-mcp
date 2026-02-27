@@ -23,6 +23,8 @@ export const ConfigSchema = z.object({
   HARNESS_MAX_RETRIES: z.coerce.number().default(3),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   HARNESS_TOOLSETS: z.string().optional(),
+  HARNESS_MAX_BODY_SIZE_MB: z.coerce.number().default(10),
+  HARNESS_RATE_LIMIT_RPS: z.coerce.number().default(10),
 });
 
 export type Config = z.infer<typeof ConfigSchema> & { HARNESS_ACCOUNT_ID: string };

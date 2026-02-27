@@ -92,11 +92,16 @@ export const featureFlagsToolset: ToolsetDefinition = {
           path: "/cf/admin/features/{flagIdentifier}",
           pathParams: { flag_id: "flagIdentifier" },
           queryParams: { environment: "environment" },
-          bodyBuilder: (input) => ({
-            instructions: [
-              { kind: input.enable ? "turnFlagOn" : "turnFlagOff" },
-            ],
-          }),
+          bodyBuilder: (input) => {
+            if (input.enable === undefined || input.enable === null) {
+              throw new Error("'enable' field is required for toggle action — set to true (on) or false (off)");
+            }
+            return {
+              instructions: [
+                { kind: input.enable ? "turnFlagOn" : "turnFlagOff" },
+              ],
+            };
+          },
           responseExtractor: passthrough,
           actionDescription:
             "Toggle a feature flag on/off. Set 'enable' to true/false and specify 'environment'.",
