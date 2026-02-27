@@ -196,6 +196,19 @@ export class Registry {
     // Build body
     const body = spec.bodyBuilder ? spec.bodyBuilder(input) : undefined;
 
+    // Validate required fields if bodySchema is defined
+    if (spec.bodySchema && body && typeof body === "object") {
+      const missing = spec.bodySchema.fields
+        .filter(f => f.required && (body as Record<string, unknown>)[f.name] === undefined)
+        .map(f => f.name);
+      if (missing.length > 0) {
+        throw new Error(
+          `Missing required fields for ${def.resourceType}: ${missing.join(", ")}. ` +
+          `Use harness_describe(resource_type="${def.resourceType}") to see the schema.`
+        );
+      }
+    }
+
     // Make request
     const raw = await client.request({
       method: spec.method,

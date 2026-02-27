@@ -1,17 +1,30 @@
-import type { ToolsetDefinition } from "../types.js";
-import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
+import type { ToolsetDefinition, BodySchema } from "../types.js";
+import { buildBodyNormalized } from "../../utils/body-normalizer.js";
+import { ngExtract, pageExtract } from "../extractors.js";
 
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
+const serviceCreateSchema: BodySchema = {
+  description: "Service definition",
+  fields: [
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)", example: "my_service" },
+    { name: "name", type: "string", required: true, description: "Display name", example: "My Service" },
+    { name: "description", type: "string", required: false, description: "Optional description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map", example: { env: "prod" } },
+    { name: "yaml", type: "yaml", required: false, description: "Full service YAML definition (for advanced config with manifests, artifacts, etc.)" },
+  ],
+  example: { identifier: "my_svc", name: "My Service", description: "A Kubernetes deployment" },
+  notes: "Body can be wrapped in { service: {...} } or passed flat — both are accepted.",
 };
 
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
+const serviceUpdateSchema: BodySchema = {
+  description: "Service update definition",
+  fields: [
+    { name: "identifier", type: "string", required: false, description: "Identifier (auto-injected from resource_id if missing)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "description", type: "string", required: false, description: "Updated description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
+  ],
+  example: { identifier: "my_svc", name: "My Service", description: "Updated description" },
+  notes: "Body can be wrapped in { service: {...} } or passed flat. Identifier auto-injected from resource_id if not in body.",
 };
 
 export const servicesToolset: ToolsetDefinition = {
@@ -51,33 +64,21 @@ export const servicesToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/servicesV2",
-          bodyBuilder: (input) => {
-            const raw = unwrapBody(input.body, "service") ?? input.body;
-            const out = stripNulls(raw);
-            return typeof out === "object" && out !== null ? out : raw;
-          },
+          bodyBuilder: buildBodyNormalized({ unwrapKey: "service" }),
           responseExtractor: ngExtract,
           description: "Create a new service",
+          bodySchema: serviceCreateSchema,
         },
         update: {
           method: "PUT",
           path: "/ng/api/servicesV2",
-          bodyBuilder: (input) => {
-            let raw = unwrapBody(input.body, "service") ?? input.body;
-            if (
-              typeof raw === "object" &&
-              raw !== null &&
-              input.service_id &&
-              ((raw as Record<string, unknown>).identifier === undefined ||
-                (raw as Record<string, unknown>).identifier === null)
-            ) {
-              (raw as Record<string, unknown>).identifier = input.service_id;
-            }
-            const out = stripNulls(raw);
-            return typeof out === "object" && out !== null ? out : raw;
-          },
+          bodyBuilder: buildBodyNormalized({
+            unwrapKey: "service",
+            injectIdentifier: { inputField: "service_id", bodyField: "identifier" },
+          }),
           responseExtractor: ngExtract,
           description: "Update an existing service",
+          bodySchema: serviceUpdateSchema,
         },
         delete: {
           method: "DELETE",

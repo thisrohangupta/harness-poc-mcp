@@ -1,18 +1,26 @@
-import type { ToolsetDefinition } from "../types.js";
+import type { ToolsetDefinition, BodySchema } from "../types.js";
+import { ngExtract, pageExtract } from "../extractors.js";
 
-/** Default response extractor for standard NG API responses */
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown; status?: string };
-  return r.data ?? raw;
+const pipelineCreateSchema: BodySchema = {
+  description: "Pipeline YAML definition",
+  fields: [
+    { name: "pipeline", type: "object", required: true, description: "Pipeline object with name, identifier, and stages", fields: [
+      { name: "name", type: "string", required: true, description: "Pipeline display name" },
+      { name: "identifier", type: "string", required: true, description: "Unique pipeline identifier" },
+      { name: "stages", type: "array", required: false, description: "Pipeline stages", itemType: "stage object" },
+    ]},
+  ],
+  example: { pipeline: { name: "My Pipeline", identifier: "my_pipeline", stages: [] } },
+  notes: "Full pipeline YAML structure. Use harness_get to fetch an existing pipeline as a template.",
 };
 
-/** Extract paginated content */
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
+const pipelineUpdateSchema: BodySchema = {
+  description: "Pipeline YAML definition (full replacement)",
+  fields: [
+    { name: "pipeline", type: "object", required: true, description: "Complete pipeline object (replaces existing)" },
+  ],
+  example: { pipeline: { name: "My Pipeline", identifier: "my_pipeline", stages: [] } },
+  notes: "Full pipeline YAML — replaces the entire pipeline definition. Fetch current with harness_get first.",
 };
 
 export const pipelinesToolset: ToolsetDefinition = {
@@ -58,6 +66,7 @@ export const pipelinesToolset: ToolsetDefinition = {
           bodyBuilder: (input) => input.body,
           responseExtractor: ngExtract,
           description: "Create a new pipeline from YAML",
+          bodySchema: pipelineCreateSchema,
         },
         update: {
           method: "PUT",
@@ -66,6 +75,7 @@ export const pipelinesToolset: ToolsetDefinition = {
           bodyBuilder: (input) => input.body,
           responseExtractor: ngExtract,
           description: "Update an existing pipeline YAML",
+          bodySchema: pipelineUpdateSchema,
         },
         delete: {
           method: "DELETE",

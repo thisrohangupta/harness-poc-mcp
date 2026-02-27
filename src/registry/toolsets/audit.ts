@@ -1,9 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return { items: r.data?.content ?? [], total: r.data?.totalElements ?? 0 };
-};
+import { ngExtract, pageExtract } from "../extractors.js";
 
 export const auditToolset: ToolsetDefinition = {
   name: "audit",
@@ -36,10 +32,7 @@ export const auditToolset: ToolsetDefinition = {
           method: "GET",
           path: "/audit/api/audits/{auditId}/yaml-diff",
           pathParams: { audit_id: "auditId" },
-          responseExtractor: (raw: unknown) => {
-            const r = raw as { data?: unknown };
-            return r.data ?? raw;
-          },
+          responseExtractor: ngExtract,
           description: "Get audit event YAML diff",
         },
       },

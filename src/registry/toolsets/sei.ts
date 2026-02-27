@@ -1,7 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-/** SEI API returns objects directly — pass through as-is */
-const passthrough = (raw: unknown) => raw;
+import { passthrough } from "../extractors.js";
 
 /** SEI base path */
 const SEI = "/gateway/sei/api";

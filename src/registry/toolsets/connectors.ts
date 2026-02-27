@@ -1,17 +1,33 @@
-import type { ToolsetDefinition } from "../types.js";
-import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
+import type { ToolsetDefinition, BodySchema } from "../types.js";
+import { buildBodyNormalized } from "../../utils/body-normalizer.js";
+import { ngExtract, pageExtract } from "../extractors.js";
 
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
+const connectorCreateSchema: BodySchema = {
+  description: "Connector definition",
+  fields: [
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)", example: "my_github" },
+    { name: "name", type: "string", required: true, description: "Display name", example: "My GitHub" },
+    { name: "type", type: "string", required: true, description: "Connector type (e.g. Github, DockerRegistry, K8sCluster, Aws, Gcp)", example: "Github" },
+    { name: "spec", type: "object", required: true, description: "Type-specific configuration (varies by connector type)", example: { url: "https://github.com", type: "Account" } },
+    { name: "description", type: "string", required: false, description: "Optional description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
+  ],
+  example: { identifier: "my_github", name: "My GitHub", type: "Github", spec: { url: "https://github.com", type: "Account" } },
+  notes: "Body can be wrapped in { connector: {...} } or passed flat — both are accepted. Use harness_list(resource_type='connector_catalogue') to see available types.",
 };
 
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
+const connectorUpdateSchema: BodySchema = {
+  description: "Connector update definition",
+  fields: [
+    { name: "identifier", type: "string", required: true, description: "Connector identifier" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "type", type: "string", required: true, description: "Connector type" },
+    { name: "spec", type: "object", required: true, description: "Type-specific configuration" },
+    { name: "description", type: "string", required: false, description: "Updated description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
+  ],
+  example: { identifier: "my_github", name: "My GitHub", type: "Github", spec: { url: "https://github.com", type: "Account" } },
+  notes: "Body can be wrapped in { connector: {...} } or passed flat. connectionType auto-injected from type field if missing.",
 };
 
 export const connectorsToolset: ToolsetDefinition = {
@@ -52,30 +68,21 @@ export const connectorsToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/connectors",
-          bodyBuilder: (input) => {
-            const raw = unwrapBody(input.body, "connector") ?? input.body;
-            const out = stripNulls(raw);
-            return typeof out === "object" && out !== null ? out : raw;
-          },
+          bodyBuilder: buildBodyNormalized({ unwrapKey: "connector" }),
           responseExtractor: ngExtract,
           description: "Create a new connector",
+          bodySchema: connectorCreateSchema,
         },
         update: {
           method: "PUT",
           path: "/ng/api/connectors",
-          bodyBuilder: (input) => {
-            let raw = unwrapBody(input.body, "connector") ?? input.body;
-            if (typeof raw === "object" && raw !== null) {
-              const r = raw as Record<string, unknown>;
-              if ((r.connectionType === undefined || r.connectionType === null) && r.type) {
-                r.connectionType = r.type;
-              }
-            }
-            const out = stripNulls(raw);
-            return typeof out === "object" && out !== null ? out : raw;
-          },
+          bodyBuilder: buildBodyNormalized({
+            unwrapKey: "connector",
+            injectFields: [{ from: "type", to: "connectionType", onlyIfMissing: true }],
+          }),
           responseExtractor: ngExtract,
           description: "Update a connector",
+          bodySchema: connectorUpdateSchema,
         },
         delete: {
           method: "DELETE",

@@ -1,24 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
-};
-
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
-};
-
-const passthrough = (raw: unknown) => raw;
-
-const gqlExtract = (field: string) => (raw: unknown) => {
-  const r = raw as { data?: Record<string, unknown> };
-  return r.data?.[field] ?? raw;
-};
+import { ngExtract, pageExtract, passthrough, gqlExtract } from "../extractors.js";
 
 // ---------------------------------------------------------------------------
 // GraphQL queries — ported from the official Go MCP server

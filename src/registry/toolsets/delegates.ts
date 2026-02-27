@@ -1,9 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
-};
+import { ngExtract } from "../extractors.js";
 
 export const delegatesToolset: ToolsetDefinition = {
   name: "delegates",
