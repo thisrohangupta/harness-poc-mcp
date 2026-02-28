@@ -17,6 +17,7 @@ export function registerUpdateTool(server: McpServer, registry: Registry, client
       org_id: z.string().describe("Organization identifier (overrides default)").optional(),
       project_id: z.string().describe("Project identifier (overrides default)").optional(),
       pipeline_id: z.string().describe("Pipeline ID (for trigger updates)").optional(),
+      version_label: z.string().describe("Template version label (for template updates; defaults to body.version_label or v1)").optional(),
     },
     async (args) => {
       try {
@@ -28,6 +29,12 @@ export function registerUpdateTool(server: McpServer, registry: Registry, client
         const input: Record<string, unknown> = { ...args };
         if (def.identifierFields.length > 0 && args.resource_id) {
           input[def.identifierFields[0]] = args.resource_id;
+        }
+        if (args.version_label) input.version_label = args.version_label;
+        else if (args.body && typeof args.body === "object" && "version_label" in args.body) {
+          input.version_label = (args.body as Record<string, unknown>).version_label;
+        } else if (args.resource_type === "template") {
+          input.version_label = "v1";
         }
 
         const result = await registry.dispatch(client, args.resource_type, "update", input);

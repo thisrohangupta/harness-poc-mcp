@@ -164,7 +164,15 @@ export class Registry {
     let path = spec.path;
     if (spec.pathParams) {
       for (const [inputKey, pathPlaceholder] of Object.entries(spec.pathParams)) {
-        const value = input[inputKey];
+        let value = input[inputKey];
+        if (value === undefined || value === "") {
+          // Default scope placeholders from config for project/org-scoped resources
+          if (pathPlaceholder === "org" && (def.scope === "project" || def.scope === "org")) {
+            value = this.config.HARNESS_DEFAULT_ORG_ID;
+          } else if (pathPlaceholder === "project" && def.scope === "project") {
+            value = this.config.HARNESS_DEFAULT_PROJECT_ID;
+          }
+        }
         if (value === undefined || value === "") {
           throw new Error(`Missing required field "${inputKey}" for path parameter "${pathPlaceholder}"`);
         }
@@ -222,20 +230,24 @@ export class Registry {
 
     // Attach deep link if available
     if (def.deepLinkTemplate && typeof result === "object" && result !== null) {
+      const resultRecord = result as Record<string, unknown>;
       const baseLinkParams: Record<string, string> = {
         orgIdentifier: (params.orgIdentifier as string) ?? "",
         projectIdentifier: (params.projectIdentifier as string) ?? "",
       };
-      // Add identifier fields from input (for get/update/delete single-item operations)
+      const getPathParam = def.operations.get?.pathParams;
       for (const field of def.identifierFields) {
-        const value = input[field];
+        const pathParamName = spec.pathParams?.[field] ?? getPathParam?.[field] ?? field;
+        let value = input[field];
+        if (!value && resultRecord) {
+          value = resultRecord[pathParamName] ?? resultRecord.identifier;
+        }
         if (value) {
-          const pathParamName = spec.pathParams?.[field] ?? field;
           baseLinkParams[pathParamName] = String(value);
         }
       }
       try {
-        (result as Record<string, unknown>).openInHarness = buildDeepLink(
+        resultRecord.openInHarness = buildDeepLink(
           this.config.HARNESS_BASE_URL,
           this.config.HARNESS_ACCOUNT_ID,
           def.deepLinkTemplate,
