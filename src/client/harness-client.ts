@@ -112,6 +112,92 @@ export class HarnessClient {
     throw lastError ?? new HarnessApiError("Max retries exceeded", 500);
   }
 
+  /**
+   * Open an SSE stream to a Harness endpoint.
+   * Yields each `data:` payload as a string. Terminates on `data: [DONE]` or stream end.
+   * No retry — SSE streams are not retryable mid-stream.
+   */
+  async *requestSSE(options: RequestOptions, signal?: AbortSignal): AsyncGenerator<string> {
+    await this.rateLimiter.acquire();
+
+    const method = options.method ?? "POST";
+    const url = this.buildUrl(options);
+    const headers: Record<string, string> = {
+      "x-api-key": this.token,
+      "Harness-Account": this.accountId,
+      Accept: "text/event-stream",
+      ...options.headers,
+    };
+
+    if (options.body) {
+      headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
+    }
+
+    const controller = new AbortController();
+    const combinedSignal = signal
+      ? AbortSignal.any([signal, controller.signal])
+      : controller.signal;
+    const timer = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      log.debug(`SSE ${method} ${url}`);
+
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: options.body ? JSON.stringify(options.body) : undefined,
+        signal: combinedSignal,
+      });
+
+      clearTimeout(timer);
+
+      if (!response.ok) {
+        const body = await response.text();
+        let parsed: { message?: string; code?: string; correlationId?: string } = {};
+        try { parsed = JSON.parse(body); } catch { /* raw text */ }
+        throw new HarnessApiError(
+          parsed.message ?? `HTTP ${response.status}: ${body.slice(0, 500)}`,
+          response.status,
+          parsed.code,
+          parsed.correlationId,
+        );
+      }
+
+      if (!response.body) {
+        throw new HarnessApiError("No response body for SSE stream", 502);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (trimmed === "data: [DONE]") return;
+          if (trimmed.startsWith("data: ")) {
+            yield trimmed.slice(6);
+          }
+        }
+      }
+
+      // Flush remaining buffer
+      const remaining = buffer.trim();
+      if (remaining.startsWith("data: ") && remaining !== "data: [DONE]") {
+        yield remaining.slice(6);
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   private buildUrl(options: RequestOptions): string {
     let path = options.path;
 

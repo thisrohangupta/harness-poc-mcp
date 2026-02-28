@@ -28,7 +28,8 @@ export type ToolsetName =
   | "scs"
   | "sto"
   | "access_control"
-  | "settings";
+  | "settings"
+  | "devops-agent";
 
 export type OperationName = "list" | "get" | "create" | "update" | "delete";
 
@@ -81,6 +82,19 @@ export interface EndpointSpec {
   description?: string;
   /** Optional body schema for write operations — exposed via harness_describe */
   bodySchema?: BodySchema;
+  /** If true, this endpoint returns an SSE stream instead of a JSON response */
+  streaming?: boolean;
+}
+
+/**
+ * Context for streaming tool responses via MCP progress notifications.
+ * Decoupled from MCP SDK types so the registry stays transport-agnostic.
+ */
+export interface StreamContext {
+  /** Forward a text chunk to the client */
+  sendChunk: (chunk: string, progress: number, total?: number) => Promise<void>;
+  /** Abort signal for cancellation */
+  signal: AbortSignal;
 }
 
 /**

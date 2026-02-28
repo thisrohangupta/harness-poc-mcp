@@ -4,6 +4,7 @@ import type { Registry } from "../registry/index.js";
 import type { HarnessClient } from "../client/harness-client.js";
 import { jsonResult, errorResult } from "../utils/response-formatter.js";
 import { toMcpError } from "../utils/errors.js";
+import type { StreamContext } from "../registry/types.js";
 
 export function registerExecuteTool(server: McpServer, registry: Registry, client: HarnessClient): void {
   server.tool(
@@ -31,7 +32,7 @@ export function registerExecuteTool(server: McpServer, registry: Registry, clien
       environment: z.string().describe("Target environment for feature flag operations").optional(),
       body: z.record(z.unknown()).describe("Additional body payload for the action").optional(),
     },
-    async (args) => {
+    async (args, extra) => {
       try {
         if (!args.confirmation) {
           // Show available actions for the resource type
@@ -54,7 +55,27 @@ export function registerExecuteTool(server: McpServer, registry: Registry, clien
           input[def.identifierFields[0]] = args.resource_id;
         }
 
-        const result = await registry.dispatchExecute(client, args.resource_type, args.action, input);
+        // Build stream context if client requested progress notifications
+        let streamCtx: StreamContext | undefined;
+        const progressToken = extra._meta?.progressToken;
+        if (progressToken !== undefined) {
+          streamCtx = {
+            signal: extra.signal,
+            sendChunk: async (chunk: string, progress: number, total?: number) => {
+              await extra.sendNotification({
+                method: "notifications/progress" as const,
+                params: {
+                  progressToken,
+                  progress,
+                  total: total ?? 0,
+                  message: chunk,
+                },
+              });
+            },
+          };
+        }
+
+        const result = await registry.dispatchExecute(client, args.resource_type, args.action, input, streamCtx);
         return jsonResult(result);
       } catch (err) {
         if (err instanceof Error && (err.message.startsWith("Unknown resource_type") || err.message.includes("no execute action"))) {

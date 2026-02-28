@@ -1,6 +1,6 @@
 import type { Config } from "../config.js";
 import type { HarnessClient } from "../client/harness-client.js";
-import type { ResourceDefinition, ToolsetDefinition, ToolsetName, OperationName, EndpointSpec } from "./types.js";
+import type { ResourceDefinition, ToolsetDefinition, ToolsetName, OperationName, EndpointSpec, StreamContext } from "./types.js";
 import { createLogger } from "../utils/logger.js";
 import { buildDeepLink } from "../utils/deep-links.js";
 
@@ -29,6 +29,7 @@ import { scsToolset } from "./toolsets/scs.js";
 import { stoToolset } from "./toolsets/sto.js";
 import { accessControlToolset } from "./toolsets/access-control.js";
 import { settingsToolset } from "./toolsets/settings.js";
+import { devopsAgentToolset } from "./toolsets/devops-agent.js";
 
 const log = createLogger("registry");
 
@@ -58,6 +59,7 @@ const ALL_TOOLSETS: ToolsetDefinition[] = [
   stoToolset,
   accessControlToolset,
   settingsToolset,
+  devopsAgentToolset,
 ];
 
 /**
@@ -143,12 +145,21 @@ export class Registry {
     resourceType: string,
     action: string,
     input: Record<string, unknown>,
+    streamCtx?: StreamContext,
   ): Promise<unknown> {
     const def = this.getResource(resourceType);
     const actionSpec = def.executeActions?.[action];
     if (!actionSpec) {
       const available = def.executeActions ? Object.keys(def.executeActions).join(", ") : "none";
       throw new Error(`Resource "${resourceType}" has no execute action "${action}". Available: ${available}`);
+    }
+
+    if (actionSpec.streaming) {
+      const ctx = streamCtx ?? {
+        sendChunk: async () => {},
+        signal: AbortSignal.timeout(this.config.HARNESS_API_TIMEOUT_MS),
+      };
+      return this.executeStreamingSpec(client, def, actionSpec, input, ctx);
     }
 
     return this.executeSpec(client, def, actionSpec, input);
@@ -281,6 +292,84 @@ export class Registry {
     }
 
     return result;
+  }
+
+  /**
+   * Execute a streaming SSE endpoint.
+   * Forwards chunks via StreamContext and returns the assembled full response.
+   */
+  private async executeStreamingSpec(
+    client: HarnessClient,
+    def: ResourceDefinition,
+    spec: EndpointSpec,
+    input: Record<string, unknown>,
+    streamCtx: StreamContext,
+  ): Promise<unknown> {
+    // Build path with substitutions
+    let path = spec.path;
+    if (spec.pathParams) {
+      for (const [inputKey, pathPlaceholder] of Object.entries(spec.pathParams)) {
+        const value = input[inputKey];
+        if (value === undefined || value === "") {
+          throw new Error(`Missing required field "${inputKey}" for path parameter "${pathPlaceholder}"`);
+        }
+        path = path.replace(`{${pathPlaceholder}}`, encodeURIComponent(String(value)));
+      }
+    }
+
+    // Build query params
+    const params: Record<string, string | number | boolean | undefined> = {};
+    if (def.scope === "project" || def.scope === "org") {
+      params.orgIdentifier = (input.org_id as string) ?? this.config.HARNESS_DEFAULT_ORG_ID;
+    }
+    if (def.scope === "project") {
+      params.projectIdentifier = (input.project_id as string) ?? this.config.HARNESS_DEFAULT_PROJECT_ID;
+    }
+    if (spec.queryParams) {
+      for (const [inputKey, queryKey] of Object.entries(spec.queryParams)) {
+        const value = input[inputKey];
+        if (value !== undefined && value !== "") {
+          params[queryKey] = value as string | number | boolean;
+        }
+      }
+    }
+
+    // Build body
+    const body = spec.bodyBuilder ? spec.bodyBuilder(input) : undefined;
+
+    // Validate required fields
+    if (spec.bodySchema && body && typeof body === "object") {
+      const missing = spec.bodySchema.fields
+        .filter(f => f.required && (body as Record<string, unknown>)[f.name] === undefined)
+        .map(f => f.name);
+      if (missing.length > 0) {
+        throw new Error(
+          `Missing required fields for ${def.resourceType}: ${missing.join(", ")}. ` +
+          `Use harness_describe(resource_type="${def.resourceType}") to see the schema.`
+        );
+      }
+    }
+
+    // Stream via SSE
+    const chunks: string[] = [];
+    let chunkIndex = 0;
+
+    for await (const chunk of client.requestSSE(
+      { method: spec.method, path, params, body },
+      streamCtx.signal,
+    )) {
+      chunks.push(chunk);
+      chunkIndex++;
+      await streamCtx.sendChunk(chunk, chunkIndex);
+    }
+
+    // Assemble final response
+    const fullText = chunks.join("");
+    try {
+      return JSON.parse(fullText);
+    } catch {
+      return { text: fullText, chunksReceived: chunks.length };
+    }
   }
 
   /** Get describe metadata for all enabled resource types (full detail). */
