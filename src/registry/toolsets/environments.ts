@@ -5,15 +5,13 @@ import { ngExtract, pageExtract } from "../extractors.js";
 const environmentCreateSchema: BodySchema = {
   description: "Environment definition",
   fields: [
-    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)", example: "staging" },
-    { name: "name", type: "string", required: true, description: "Display name", example: "Staging" },
-    { name: "type", type: "string", required: true, description: "Environment type: Production or PreProduction", example: "PreProduction" },
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "type", type: "string", required: true, description: "Environment type: Production or PreProduction" },
     { name: "description", type: "string", required: false, description: "Optional description" },
-    { name: "tags", type: "object", required: false, description: "Key-value tag map", example: { tier: "staging" } },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
     { name: "yaml", type: "yaml", required: false, description: "Full environment YAML definition (for advanced config)" },
   ],
-  example: { identifier: "staging", name: "Staging", type: "PreProduction", description: "Staging environment" },
-  notes: "Body can be wrapped in { environment: {...} } or passed flat — both are accepted.",
 };
 
 const environmentUpdateSchema: BodySchema = {
@@ -25,8 +23,6 @@ const environmentUpdateSchema: BodySchema = {
     { name: "description", type: "string", required: false, description: "Updated description" },
     { name: "tags", type: "object", required: false, description: "Key-value tag map" },
   ],
-  example: { identifier: "staging", name: "Staging", type: "PreProduction", description: "Updated description" },
-  notes: "Body can be wrapped in { environment: {...} } or passed flat. Identifier auto-injected from resource_id if not in body.",
 };
 
 export const environmentsToolset: ToolsetDefinition = {

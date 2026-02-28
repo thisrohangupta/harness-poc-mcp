@@ -45,8 +45,6 @@ export interface BodyFieldSpec {
   required: boolean;
   /** Brief description (shown to agents) */
   description: string;
-  /** Example value */
-  example?: unknown;
   /** For "object" type: nested fields */
   fields?: BodyFieldSpec[];
   /** For "array" type: item type description */
@@ -62,10 +60,6 @@ export interface BodySchema {
   description: string;
   /** The fields the body expects */
   fields: BodyFieldSpec[];
-  /** A minimal complete example body */
-  example?: Record<string, unknown>;
-  /** Notes about wrapper keys, formatting, etc. */
-  notes?: string;
 }
 
 /**

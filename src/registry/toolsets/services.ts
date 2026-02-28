@@ -5,14 +5,12 @@ import { ngExtract, pageExtract } from "../extractors.js";
 const serviceCreateSchema: BodySchema = {
   description: "Service definition",
   fields: [
-    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)", example: "my_service" },
-    { name: "name", type: "string", required: true, description: "Display name", example: "My Service" },
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
     { name: "description", type: "string", required: false, description: "Optional description" },
-    { name: "tags", type: "object", required: false, description: "Key-value tag map", example: { env: "prod" } },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
     { name: "yaml", type: "yaml", required: false, description: "Full service YAML definition (for advanced config with manifests, artifacts, etc.)" },
   ],
-  example: { identifier: "my_svc", name: "My Service", description: "A Kubernetes deployment" },
-  notes: "Body can be wrapped in { service: {...} } or passed flat — both are accepted.",
 };
 
 const serviceUpdateSchema: BodySchema = {
@@ -23,8 +21,6 @@ const serviceUpdateSchema: BodySchema = {
     { name: "description", type: "string", required: false, description: "Updated description" },
     { name: "tags", type: "object", required: false, description: "Key-value tag map" },
   ],
-  example: { identifier: "my_svc", name: "My Service", description: "Updated description" },
-  notes: "Body can be wrapped in { service: {...} } or passed flat. Identifier auto-injected from resource_id if not in body.",
 };
 
 export const servicesToolset: ToolsetDefinition = {

@@ -5,15 +5,13 @@ import { ngExtract, pageExtract } from "../extractors.js";
 const connectorCreateSchema: BodySchema = {
   description: "Connector definition",
   fields: [
-    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)", example: "my_github" },
-    { name: "name", type: "string", required: true, description: "Display name", example: "My GitHub" },
-    { name: "type", type: "string", required: true, description: "Connector type (e.g. Github, DockerRegistry, K8sCluster, Aws, Gcp)", example: "Github" },
-    { name: "spec", type: "object", required: true, description: "Type-specific configuration (varies by connector type)", example: { url: "https://github.com", type: "Account" } },
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "type", type: "string", required: true, description: "Connector type (e.g. Github, DockerRegistry, K8sCluster, Aws, Gcp)" },
+    { name: "spec", type: "object", required: true, description: "Type-specific configuration (varies by connector type)" },
     { name: "description", type: "string", required: false, description: "Optional description" },
     { name: "tags", type: "object", required: false, description: "Key-value tag map" },
   ],
-  example: { identifier: "my_github", name: "My GitHub", type: "Github", spec: { url: "https://github.com", type: "Account" } },
-  notes: "Body can be wrapped in { connector: {...} } or passed flat — both are accepted. Use harness_list(resource_type='connector_catalogue') to see available types.",
 };
 
 const connectorUpdateSchema: BodySchema = {
@@ -26,8 +24,6 @@ const connectorUpdateSchema: BodySchema = {
     { name: "description", type: "string", required: false, description: "Updated description" },
     { name: "tags", type: "object", required: false, description: "Key-value tag map" },
   ],
-  example: { identifier: "my_github", name: "My GitHub", type: "Github", spec: { url: "https://github.com", type: "Account" } },
-  notes: "Body can be wrapped in { connector: {...} } or passed flat. connectionType auto-injected from type field if missing.",
 };
 
 export const connectorsToolset: ToolsetDefinition = {

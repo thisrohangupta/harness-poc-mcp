@@ -10,8 +10,6 @@ const pipelineCreateSchema: BodySchema = {
       { name: "stages", type: "array", required: false, description: "Pipeline stages", itemType: "stage object" },
     ]},
   ],
-  example: { pipeline: { name: "My Pipeline", identifier: "my_pipeline", stages: [] } },
-  notes: "Full pipeline YAML structure. Use harness_get to fetch an existing pipeline as a template.",
 };
 
 const pipelineUpdateSchema: BodySchema = {
@@ -19,8 +17,6 @@ const pipelineUpdateSchema: BodySchema = {
   fields: [
     { name: "pipeline", type: "object", required: true, description: "Complete pipeline object (replaces existing)" },
   ],
-  example: { pipeline: { name: "My Pipeline", identifier: "my_pipeline", stages: [] } },
-  notes: "Full pipeline YAML — replaces the entire pipeline definition. Fetch current with harness_get first.",
 };
 
 export const pipelinesToolset: ToolsetDefinition = {

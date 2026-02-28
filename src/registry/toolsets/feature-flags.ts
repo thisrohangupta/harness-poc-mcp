@@ -4,13 +4,12 @@ import { passthrough } from "../extractors.js";
 const featureFlagCreateSchema: BodySchema = {
   description: "Feature flag definition",
   fields: [
-    { name: "identifier", type: "string", required: true, description: "Flag key/identifier (unique within project)", example: "dark_mode" },
-    { name: "name", type: "string", required: true, description: "Display name", example: "Dark Mode" },
-    { name: "kind", type: "string", required: true, description: "Flag kind: boolean or multivariate", example: "boolean" },
+    { name: "identifier", type: "string", required: true, description: "Flag key/identifier (unique within project)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "kind", type: "string", required: true, description: "Flag kind: boolean or multivariate" },
     { name: "permanent", type: "boolean", required: false, description: "Whether the flag is permanent (won't be cleaned up)" },
     { name: "description", type: "string", required: false, description: "Optional description" },
   ],
-  example: { identifier: "dark_mode", name: "Dark Mode", kind: "boolean" },
 };
 
 const featureFlagToggleSchema: BodySchema = {
@@ -19,7 +18,6 @@ const featureFlagToggleSchema: BodySchema = {
     { name: "enable", type: "boolean", required: true, description: "true to turn on, false to turn off" },
     { name: "environment", type: "string", required: true, description: "Target environment identifier" },
   ],
-  notes: "enable and environment are passed as tool input fields, not in the body. The toggle bodyBuilder constructs the PATCH instructions automatically.",
 };
 
 export const featureFlagsToolset: ToolsetDefinition = {

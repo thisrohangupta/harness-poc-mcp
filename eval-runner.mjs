@@ -905,10 +905,8 @@ async function main() {
         if (!field.required) continue;
         if (field.name === "identifier") {
           minimalBody.identifier = uniqueId;
-        } else if (field.example !== undefined) {
-          minimalBody[field.name] = field.example;
         } else {
-          // Fallback defaults by type
+          // Defaults by type
           switch (field.type) {
             case "string": minimalBody[field.name] = `eval_${field.name}`; break;
             case "number": minimalBody[field.name] = 0; break;
