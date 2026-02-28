@@ -44,7 +44,7 @@ function summarizeExecution(
 
   if (exec.planExecutionId && exec.pipelineIdentifier) {
     try {
-      summary._deepLink = buildDeepLink(baseUrl, accountId,
+      summary.openInHarness = buildDeepLink(baseUrl, accountId,
         "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/pipelines/{pipelineIdentifier}/executions/{planExecutionId}/pipeline",
         {
           orgIdentifier: orgId,
@@ -185,7 +185,7 @@ export function registerStatusTool(
             total_recent: totalRecent,
             health,
           },
-          _deepLink: deploymentsLink,
+          openInHarness: deploymentsLink,
         };
 
         if (Object.keys(errors).length > 0) {

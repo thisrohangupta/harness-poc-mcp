@@ -27,7 +27,7 @@ interface SearchResultEntry {
   match_count: number;
   items: unknown[];
   total: number;
-  _deepLink?: string;
+  openInHarness?: string;
 }
 
 export function registerSearchTool(server: McpServer, registry: Registry, client: HarnessClient): void {
@@ -86,7 +86,7 @@ export function registerSearchTool(server: McpServer, registry: Registry, client
 
         for (const { rt, result, error } of settled) {
           if (result) {
-            const r = result as { items?: unknown[]; total?: number; _deepLink?: string };
+            const r = result as { items?: unknown[]; total?: number; openInHarness?: string };
             if (r.items && r.items.length > 0) {
               const items = args.compact !== false ? compactItems(r.items) : r.items;
               const matchCount = r.items.length;
@@ -97,7 +97,7 @@ export function registerSearchTool(server: McpServer, registry: Registry, client
                 match_count: matchCount,
                 items,
                 total: r.total ?? matchCount,
-                ...(r._deepLink ? { _deepLink: r._deepLink } : {}),
+                ...(r.openInHarness ? { openInHarness: r.openInHarness } : {}),
               });
             }
           }

@@ -1,5 +1,17 @@
 import type { ToolsetDefinition } from "../types.js";
-import { ngExtract, pageExtract } from "../extractors.js";
+
+const ngExtract = (raw: unknown) => {
+  const r = raw as { data?: unknown };
+  return r.data ?? raw;
+};
+
+const pageExtract = (raw: unknown) => {
+  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
+  return {
+    items: r.data?.content ?? [],
+    total: r.data?.totalElements ?? 0,
+  };
+};
 
 export const templatesToolset: ToolsetDefinition = {
   name: "templates",
@@ -14,7 +26,7 @@ export const templatesToolset: ToolsetDefinition = {
       scope: "project",
       identifierFields: ["template_id"],
       listFilterFields: ["search_term", "template_type", "template_list_type"],
-      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/setup/resources/templates",
+      deepLinkTemplate: "/ng/account/{accountId}/home/orgs/{orgIdentifier}/projects/{projectIdentifier}/setup/resources/templates/{templateIdentifier}",
       operations: {
         list: {
           method: "POST",

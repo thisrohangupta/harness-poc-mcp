@@ -23,7 +23,7 @@ const OWNERSHIP_FIELDS = new Set([
   "tags", "labels", "owner",
 ]);
 
-const ALWAYS_KEEP = new Set(["_deepLink"]);
+const ALWAYS_KEEP = new Set(["openInHarness"]);
 
 /** Identifier-like key pattern: pipelineIdentifier, projectId, env_id, etc. */
 const IDENTIFIER_PATTERN = /(?:Identifier|Id|_id)$/;

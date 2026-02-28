@@ -235,7 +235,7 @@ export class Registry {
         }
       }
       try {
-        (result as Record<string, unknown>)._deepLink = buildDeepLink(
+        (result as Record<string, unknown>).openInHarness = buildDeepLink(
           this.config.HARNESS_BASE_URL,
           this.config.HARNESS_ACCOUNT_ID,
           def.deepLinkTemplate,
@@ -256,9 +256,10 @@ export class Registry {
 
             // Resolve identifier fields from each item
             for (const field of def.identifierFields) {
-              // Get the API-side param name (e.g., pipeline_id -> pipelineIdentifier)
-              const pathParamName = spec.pathParams?.[field] ?? field;
-              // Look for the API param name directly in the item (e.g., pipelineIdentifier, planExecutionId)
+              // Use get spec's path param name when present so deep link template placeholder matches (e.g. templateIdentifier)
+              const getPathParam = def.operations.get?.pathParams?.[field];
+              const pathParamName = spec.pathParams?.[field] ?? getPathParam ?? field;
+              // Look for the API param name directly in the item (e.g., pipelineIdentifier, identifier)
               if (itemRecord[pathParamName] !== undefined) {
                 itemLinkParams[pathParamName] = String(itemRecord[pathParamName]);
               } else if (itemRecord.identifier !== undefined) {
@@ -267,7 +268,7 @@ export class Registry {
               }
             }
 
-            itemRecord._deepLink = buildDeepLink(
+            itemRecord.openInHarness = buildDeepLink(
               this.config.HARNESS_BASE_URL,
               this.config.HARNESS_ACCOUNT_ID,
               def.deepLinkTemplate,
