@@ -17,7 +17,6 @@
  *   --tier <1,2,3,4,5>    Run specific tiers only (comma-separated)
  *   --include-crud        Enable Tier 4 CRUD lifecycle tests
  *   --include-execute     Enable Tier 5 execute action tests
- *   --skip-schemas        Skip schema staleness detection (runs by default)
  *   --toolset <name,...>  Only test specific toolsets
  *   --json                Output results as JSON
  *   --parallel <n>        Parallel batch size (default: 10)
@@ -40,7 +39,6 @@ function parseArgs() {
     tiers: null, // null = all applicable
     includeCrud: false,
     includeExecute: false,
-    skipSchemas: false,
     toolsets: null,
     json: false,
     parallel: 10,
@@ -52,7 +50,6 @@ function parseArgs() {
       case "--tier": opts.tiers = new Set(args[++i].split(",").map(Number)); break;
       case "--include-crud": opts.includeCrud = true; break;
       case "--include-execute": opts.includeExecute = true; break;
-      case "--skip-schemas": opts.skipSchemas = true; break;
       case "--toolset": opts.toolsets = new Set(args[++i].split(",")); break;
       case "--json": opts.json = true; break;
       case "--parallel": opts.parallel = parseInt(args[++i], 10); break;
@@ -277,7 +274,7 @@ async function main() {
     console.log("╚══════════════════════════════════════════════════════════════╝");
     console.log(`Date: ${new Date().toISOString().split("T")[0]}`);
     const tierList = opts.tiers ? [...opts.tiers].join(",") : "1,2,3" + (opts.includeCrud ? ",4" : "") + (opts.includeExecute ? ",5" : "");
-    console.log(`Tiers: ${tierList}${opts.skipSchemas ? "" : " + schema-validation"}`);
+    console.log(`Tiers: ${tierList} + schema-validation`);
     console.log("");
   }
 
@@ -808,7 +805,7 @@ async function main() {
   // SCHEMA VALIDATION: Staleness detection (opt-in)
   // ════════════════════════════════════════════════════════════════
 
-  if (!opts.skipSchemas) {
+  {
     if (!opts.json) console.log("─── Schema Validation: Staleness Detection ────────────────────\n");
 
     const orgId = envVars.HARNESS_DEFAULT_ORG_ID || "default";
@@ -1001,8 +998,6 @@ async function main() {
     }
 
     if (!opts.json) console.log("");
-  } else {
-    if (!opts.json) console.log("─── Schema Validation (skipped — remove --skip-schemas to run) ─\n");
   }
 
   // ════════════════════════════════════════════════════════════════
