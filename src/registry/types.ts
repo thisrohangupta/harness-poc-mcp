@@ -33,6 +33,36 @@ export type ToolsetName =
 export type OperationName = "list" | "get" | "create" | "update" | "delete";
 
 /**
+ * Lightweight field descriptor for body schemas.
+ * Pure data (not Zod) — serializable to JSON for harness_describe output.
+ */
+export interface BodyFieldSpec {
+  /** Field name as the API expects it */
+  name: string;
+  /** Data type hint */
+  type: "string" | "number" | "boolean" | "object" | "array" | "yaml";
+  /** Whether the field is required for the operation to succeed */
+  required: boolean;
+  /** Brief description (shown to agents) */
+  description: string;
+  /** For "object" type: nested fields */
+  fields?: BodyFieldSpec[];
+  /** For "array" type: item type description */
+  itemType?: string;
+}
+
+/**
+ * Body schema for a write operation (create/update/execute action).
+ * Advisory — bodyBuilder still does actual transformation.
+ */
+export interface BodySchema {
+  /** Brief description of what the body represents */
+  description: string;
+  /** The fields the body expects */
+  fields: BodyFieldSpec[];
+}
+
+/**
  * Specifies how a single CRUD operation maps to the Harness API.
  */
 export interface EndpointSpec {
@@ -49,6 +79,8 @@ export interface EndpointSpec {
   responseExtractor?: (raw: unknown) => unknown;
   /** Description shown in harness_describe output */
   description?: string;
+  /** Optional body schema for write operations — exposed via harness_describe */
+  bodySchema?: BodySchema;
 }
 
 /**

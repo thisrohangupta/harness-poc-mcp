@@ -273,7 +273,8 @@ async function main() {
     console.log("║        Harness MCP Server — Comprehensive Eval Runner       ║");
     console.log("╚══════════════════════════════════════════════════════════════╝");
     console.log(`Date: ${new Date().toISOString().split("T")[0]}`);
-    console.log(`Tiers: ${opts.tiers ? [...opts.tiers].join(",") : "1,2,3" + (opts.includeCrud ? ",4" : "") + (opts.includeExecute ? ",5" : "")}`);
+    const tierList = opts.tiers ? [...opts.tiers].join(",") : "1,2,3" + (opts.includeCrud ? ",4" : "") + (opts.includeExecute ? ",5" : "");
+    console.log(`Tiers: ${tierList} + schema-validation`);
     console.log("");
   }
 
@@ -798,6 +799,203 @@ async function main() {
     }
   } else if (shouldRunTier(4) && !opts.includeCrud) {
     if (!opts.json) console.log("─── Tier 4: CRUD Lifecycle (skipped — pass --include-crud) ───\n");
+  }
+
+  // ════════════════════════════════════════════════════════════════
+  // SCHEMA VALIDATION: Staleness detection (opt-in)
+  // ════════════════════════════════════════════════════════════════
+
+  {
+    if (!opts.json) console.log("─── Schema Validation: Staleness Detection ────────────────────\n");
+
+    const orgId = envVars.HARNESS_DEFAULT_ORG_ID || "default";
+
+    // Resource types with bodySchema on create (the 5 annotated toolsets)
+    const SCHEMA_TYPES = [
+      { type: "service", toolset: "services", domain: "Schema" },
+      { type: "environment", toolset: "environments", domain: "Schema" },
+      { type: "connector", toolset: "connectors", domain: "Schema" },
+      { type: "pipeline", toolset: "pipelines", domain: "Schema" },
+      { type: "feature_flag", toolset: "feature-flags", domain: "Schema" },
+    ];
+
+    for (const st of SCHEMA_TYPES) {
+      if (!shouldRunToolset(st.toolset)) continue;
+
+      // Step 1: Get schema via harness_describe
+      let schema = null;
+      try {
+        const descResult = await callTool(client, "harness_describe", { resource_type: st.type });
+        const descData = parse(descResult);
+        const createOp = descData?.operations?.find(op => op.operation === "create");
+        schema = createOp?.bodySchema;
+      } catch { /* skip */ }
+
+      if (!schema) {
+        skipCase({
+          id: `schema_${st.type}`, tier: 6, domain: st.domain, desc: `Schema validation: ${st.type}`,
+        }, "no bodySchema found");
+        continue;
+      }
+
+      // Step 2: Test empty body → our pre-flight validation should catch required fields
+      const requiredFields = schema.fields.filter(f => f.required).map(f => f.name);
+
+      if (requiredFields.length > 0) {
+        const emptyBodyCase = {
+          id: `schema_${st.type}_empty`, tier: 6, domain: st.domain, tool: "harness_create",
+          args: { resource_type: st.type, body: {}, confirmation: true, project_id: PROJECT_ID },
+          check: (r) => {
+            // We EXPECT an error (isError=true) mentioning "Missing required fields"
+            // This validates our pre-flight validation is working correctly
+            const text = r?.content?.[0]?.text || "";
+            if (!text.includes("Missing required fields")) return false;
+            // Verify all required fields from schema are mentioned in the error
+            for (const f of requiredFields) {
+              if (!text.includes(f)) return false;
+            }
+            return true; // Pre-flight validation correctly caught all required fields
+          },
+          // Override: for this test, isError=true with correct message IS a pass
+          skipIfUnavailable: false,
+          desc: `Empty body validation: ${st.type}`,
+        };
+        // Custom run: we expect isError=true, so bypass the default error handling
+        if (!opts.json) {
+          const label = `[${emptyBodyCase.id}]`.padEnd(28);
+          process.stdout.write(`  ${label} ${emptyBodyCase.desc.padEnd(42)} `);
+        }
+        const start = Date.now();
+        try {
+          const result = await callTool(client, emptyBodyCase.tool, emptyBodyCase.args);
+          const elapsed = Date.now() - start;
+          const text = result?.content?.[0]?.text || "";
+
+          if (text.includes("Missing required fields")) {
+            // Verify all required fields are mentioned
+            const allMentioned = requiredFields.every(f => text.includes(f));
+            if (allMentioned) {
+              totalPassed++;
+              if (!opts.json) console.log(`✅  Pre-flight validation correct (${elapsed}ms)`);
+              allResults.push({ ...emptyBodyCase, score: 1, summary: `Pre-flight validation correct (${elapsed}ms)`, check: undefined });
+            } else {
+              totalFailed++;
+              const missing = requiredFields.filter(f => !text.includes(f));
+              if (!opts.json) console.log(`❌  STALE: schema lists ${missing.join(",")} as required but validation didn't catch them (${elapsed}ms)`);
+              allResults.push({ ...emptyBodyCase, score: 0, summary: `STALE: missing validation for: ${missing.join(",")}`, check: undefined });
+            }
+          } else {
+            totalFailed++;
+            if (!opts.json) console.log(`❌  STALE: empty body was not rejected by pre-flight validation (${elapsed}ms)`);
+            allResults.push({ ...emptyBodyCase, score: 0, summary: `STALE: empty body not rejected`, check: undefined });
+          }
+        } catch (err) {
+          const elapsed = Date.now() - start;
+          totalFailed++;
+          if (!opts.json) console.log(`❌  EXCEPTION: ${truncate(err.message)} (${elapsed}ms)`);
+          allResults.push({ ...emptyBodyCase, score: 0, summary: `EXCEPTION: ${truncate(err.message)}`, check: undefined });
+        }
+      }
+
+      // Step 3: Build minimal body from schema required fields + examples → create → check Harness response
+      const uniqueId = generateUniqueId(st.type);
+      const minimalBody = {};
+
+      for (const field of schema.fields) {
+        if (!field.required) continue;
+        if (field.name === "identifier") {
+          minimalBody.identifier = uniqueId;
+        } else {
+          // Defaults by type
+          switch (field.type) {
+            case "string": minimalBody[field.name] = `eval_${field.name}`; break;
+            case "number": minimalBody[field.name] = 0; break;
+            case "boolean": minimalBody[field.name] = false; break;
+            case "object": minimalBody[field.name] = {}; break;
+            case "array": minimalBody[field.name] = []; break;
+            default: minimalBody[field.name] = `eval_${field.name}`;
+          }
+        }
+      }
+
+      // Special handling: pipeline body is nested under { pipeline: { ... } }
+      const createBody = st.type === "pipeline"
+        ? { pipeline: { ...minimalBody, identifier: uniqueId, name: `Eval Schema ${uniqueId}`, stages: [] } }
+        : minimalBody;
+
+      let createOk = false;
+
+      // Custom run for create: we need nuanced error handling
+      const createCaseId = `schema_${st.type}_create`;
+      const createCaseDesc = `Schema create: ${st.type} (minimal required)`;
+      if (!opts.json) {
+        const label = `[${createCaseId}]`.padEnd(28);
+        process.stdout.write(`  ${label} ${createCaseDesc.padEnd(42)} `);
+      }
+      const createStart = Date.now();
+      try {
+        const result = await callTool(client, "harness_create", {
+          resource_type: st.type, body: createBody, confirmation: true, project_id: PROJECT_ID,
+        });
+        const elapsed = Date.now() - createStart;
+        const text = result?.content?.[0]?.text || "";
+
+        if (result?.isError) {
+          if (text.includes("Missing required fields")) {
+            // Our OWN pre-flight rejected it — schema is wrong (body was built from its own schema!)
+            totalFailed++;
+            if (!opts.json) console.log(`❌  STALE: pre-flight rejected body built from schema (${elapsed}ms)`);
+            allResults.push({ id: createCaseId, tier: 6, domain: st.domain, score: 0, summary: `STALE: self-rejection` });
+          } else {
+            // Check for Harness telling us a field is required that we don't have
+            const missingMatch = text.match(/(?:field|property|parameter)\s+["']?(\w+)["']?\s+(?:is required|must not be null|is mandatory|cannot be empty)/i);
+            if (missingMatch && !requiredFields.includes(missingMatch[1])) {
+              // Harness requires a field our schema doesn't mark as required → STALE
+              totalFailed++;
+              if (!opts.json) console.log(`❌  STALE: Harness requires "${missingMatch[1]}" not in schema (${elapsed}ms)`);
+              allResults.push({ id: createCaseId, tier: 6, domain: st.domain, score: 0, summary: `STALE: missing required field "${missingMatch[1]}"` });
+            } else {
+              // API-side rejection for value format, constraints, etc. → schema structure is correct
+              totalPassed++;
+              if (!opts.json) console.log(`✅  Schema valid (API rejected values, not structure) (${elapsed}ms)`);
+              allResults.push({ id: createCaseId, tier: 6, domain: st.domain, score: 1, summary: `Schema valid (API value rejection, ${elapsed}ms)` });
+            }
+          }
+        } else {
+          // Success → schema is correct, resource was created
+          createOk = true;
+          totalPassed++;
+          if (!opts.json) console.log(`✅  Schema valid (created successfully) (${elapsed}ms)`);
+          allResults.push({ id: createCaseId, tier: 6, domain: st.domain, score: 1, summary: `Schema valid (created, ${elapsed}ms)` });
+        }
+      } catch (err) {
+        const elapsed = Date.now() - createStart;
+        totalFailed++;
+        if (!opts.json) console.log(`❌  EXCEPTION: ${truncate(err.message)} (${elapsed}ms)`);
+        allResults.push({ id: createCaseId, tier: 6, domain: st.domain, score: 0, summary: `EXCEPTION: ${truncate(err.message)}` });
+      }
+
+      // Cleanup if created
+      if (createOk) {
+        try {
+          const deleteArgs = { resource_type: st.type, resource_id: uniqueId, confirmation: true, project_id: PROJECT_ID };
+          // Pipeline needs pipeline_id
+          if (st.type === "pipeline") deleteArgs.resource_id = uniqueId;
+          await callTool(client, "harness_delete", deleteArgs);
+          if (!opts.json) {
+            const label = `[schema_${st.type}_cleanup]`.padEnd(28);
+            console.log(`  ${label} ${"Cleanup (delete)".padEnd(42)} 🧹  OK`);
+          }
+        } catch {
+          if (!opts.json) {
+            const label = `[schema_${st.type}_cleanup]`.padEnd(28);
+            console.log(`  ${label} ${"Cleanup (delete)".padEnd(42)} ⚠️  Failed (manual cleanup needed: ${uniqueId})`);
+          }
+        }
+      }
+    }
+
+    if (!opts.json) console.log("");
   }
 
   // ════════════════════════════════════════════════════════════════

@@ -28,12 +28,14 @@ export function registerDescribeTool(server: McpServer, registry: Registry): voi
               operation: op,
               method: spec.method,
               description: spec.description,
+              bodySchema: spec.bodySchema ?? undefined,
             })),
             executeActions: def.executeActions
               ? Object.entries(def.executeActions).map(([action, spec]) => ({
                   action,
                   method: spec.method,
                   description: spec.actionDescription,
+                  bodySchema: spec.bodySchema ?? undefined,
                 }))
               : undefined,
           });

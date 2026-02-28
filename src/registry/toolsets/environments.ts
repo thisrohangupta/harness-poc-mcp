@@ -1,17 +1,28 @@
-import type { ToolsetDefinition } from "../types.js";
-import { stripNulls, unwrapBody } from "../../utils/body-normalizer.js";
+import type { ToolsetDefinition, BodySchema } from "../types.js";
+import { buildBodyNormalized } from "../../utils/body-normalizer.js";
+import { ngExtract, pageExtract } from "../extractors.js";
 
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
+const environmentCreateSchema: BodySchema = {
+  description: "Environment definition",
+  fields: [
+    { name: "identifier", type: "string", required: true, description: "Unique identifier (lowercase, hyphens, underscores)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "type", type: "string", required: true, description: "Environment type: Production or PreProduction" },
+    { name: "description", type: "string", required: false, description: "Optional description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
+    { name: "yaml", type: "yaml", required: false, description: "Full environment YAML definition (for advanced config)" },
+  ],
 };
 
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
+const environmentUpdateSchema: BodySchema = {
+  description: "Environment update definition",
+  fields: [
+    { name: "identifier", type: "string", required: false, description: "Identifier (auto-injected from resource_id if missing)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "type", type: "string", required: true, description: "Environment type: Production or PreProduction" },
+    { name: "description", type: "string", required: false, description: "Updated description" },
+    { name: "tags", type: "object", required: false, description: "Key-value tag map" },
+  ],
 };
 
 export const environmentsToolset: ToolsetDefinition = {
@@ -52,16 +63,21 @@ export const environmentsToolset: ToolsetDefinition = {
         create: {
           method: "POST",
           path: "/ng/api/environmentsV2",
-          bodyBuilder: (input) => stripNulls(unwrapBody(input.body, "environment")) ?? input.body,
+          bodyBuilder: buildBodyNormalized({ unwrapKey: "environment" }),
           responseExtractor: ngExtract,
           description: "Create a new environment",
+          bodySchema: environmentCreateSchema,
         },
         update: {
           method: "PUT",
           path: "/ng/api/environmentsV2",
-          bodyBuilder: (input) => stripNulls(unwrapBody(input.body, "environment")) ?? input.body,
+          bodyBuilder: buildBodyNormalized({
+            unwrapKey: "environment",
+            injectIdentifier: { inputField: "environment_id", bodyField: "identifier" },
+          }),
           responseExtractor: ngExtract,
           description: "Update an existing environment",
+          bodySchema: environmentUpdateSchema,
         },
         delete: {
           method: "DELETE",

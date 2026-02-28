@@ -1,7 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-/** Code API returns arrays/objects directly — pass through as-is */
-const passthrough = (raw: unknown) => raw;
+import { passthrough } from "../extractors.js";
 
 export const pullRequestsToolset: ToolsetDefinition = {
   name: "pull-requests",

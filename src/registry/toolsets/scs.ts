@@ -1,7 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-/** SSCA API returns objects directly — pass through as-is */
-const passthrough = (raw: unknown) => raw;
+import { passthrough } from "../extractors.js";
 
 export const scsToolset: ToolsetDefinition = {
   name: "scs",

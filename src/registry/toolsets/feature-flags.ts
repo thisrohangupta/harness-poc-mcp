@@ -1,7 +1,24 @@
-import type { ToolsetDefinition } from "../types.js";
+import type { ToolsetDefinition, BodySchema } from "../types.js";
+import { passthrough } from "../extractors.js";
 
-/** CF API returns objects directly — pass through as-is */
-const passthrough = (raw: unknown) => raw;
+const featureFlagCreateSchema: BodySchema = {
+  description: "Feature flag definition",
+  fields: [
+    { name: "identifier", type: "string", required: true, description: "Flag key/identifier (unique within project)" },
+    { name: "name", type: "string", required: true, description: "Display name" },
+    { name: "kind", type: "string", required: true, description: "Flag kind: boolean or multivariate" },
+    { name: "permanent", type: "boolean", required: false, description: "Whether the flag is permanent (won't be cleaned up)" },
+    { name: "description", type: "string", required: false, description: "Optional description" },
+  ],
+};
+
+const featureFlagToggleSchema: BodySchema = {
+  description: "Toggle instructions (built automatically from enable field)",
+  fields: [
+    { name: "enable", type: "boolean", required: true, description: "true to turn on, false to turn off" },
+    { name: "environment", type: "string", required: true, description: "Target environment identifier" },
+  ],
+};
 
 export const featureFlagsToolset: ToolsetDefinition = {
   name: "feature-flags",
@@ -77,6 +94,7 @@ export const featureFlagsToolset: ToolsetDefinition = {
           bodyBuilder: (input) => input.body,
           responseExtractor: passthrough,
           description: "Create a new feature flag",
+          bodySchema: featureFlagCreateSchema,
         },
         delete: {
           method: "DELETE",
@@ -105,6 +123,7 @@ export const featureFlagsToolset: ToolsetDefinition = {
           responseExtractor: passthrough,
           actionDescription:
             "Toggle a feature flag on/off. Set 'enable' to true/false and specify 'environment'.",
+          bodySchema: featureFlagToggleSchema,
         },
       },
     },

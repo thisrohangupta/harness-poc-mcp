@@ -1,17 +1,5 @@
 import type { ToolsetDefinition } from "../types.js";
-
-const ngExtract = (raw: unknown) => {
-  const r = raw as { data?: unknown };
-  return r.data ?? raw;
-};
-
-const pageExtract = (raw: unknown) => {
-  const r = raw as { data?: { content?: unknown[]; totalElements?: number } };
-  return {
-    items: r.data?.content ?? [],
-    total: r.data?.totalElements ?? 0,
-  };
-};
+import { ngExtract, pageExtract } from "../extractors.js";
 
 export const templatesToolset: ToolsetDefinition = {
   name: "templates",

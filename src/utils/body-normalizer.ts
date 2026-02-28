@@ -26,3 +26,51 @@ export function unwrapBody(body: unknown, wrapperKey: string): unknown {
   }
   return body;
 }
+
+/**
+ * Options for the standardized body builder factory.
+ */
+export interface BodyBuilderOptions {
+  /** Unwrap a wrapper key (e.g., "service", "connector", "environment") */
+  unwrapKey?: string;
+  /** Auto-inject identifier from input field if missing from body */
+  injectIdentifier?: { inputField: string; bodyField: string };
+  /** Auto-inject additional fields if missing */
+  injectFields?: Array<{ from: string; to: string; onlyIfMissing?: boolean }>;
+}
+
+/**
+ * Factory: returns a bodyBuilder function that handles unwrap, stripNulls, and field injection.
+ * Replaces repetitive inline bodyBuilder patterns across toolsets.
+ */
+export function buildBodyNormalized(opts: BodyBuilderOptions = {}): (input: Record<string, unknown>) => unknown {
+  return (input: Record<string, unknown>) => {
+    let body = input.body;
+
+    // Step 1: Unwrap wrapper key if configured
+    if (opts.unwrapKey) {
+      body = unwrapBody(body, opts.unwrapKey) ?? body;
+    }
+
+    // Step 2: Inject identifier if configured and missing
+    if (opts.injectIdentifier && typeof body === "object" && body !== null) {
+      const rec = body as Record<string, unknown>;
+      if (rec[opts.injectIdentifier.bodyField] == null && input[opts.injectIdentifier.inputField]) {
+        rec[opts.injectIdentifier.bodyField] = input[opts.injectIdentifier.inputField];
+      }
+    }
+
+    // Step 3: Inject additional fields
+    if (opts.injectFields && typeof body === "object" && body !== null) {
+      const rec = body as Record<string, unknown>;
+      for (const f of opts.injectFields) {
+        if (f.onlyIfMissing && rec[f.to] != null) continue;
+        if (input[f.from] != null) rec[f.to] = input[f.from];
+      }
+    }
+
+    // Step 4: Strip nulls
+    const out = stripNulls(body);
+    return typeof out === "object" && out !== null ? out : body;
+  };
+}
