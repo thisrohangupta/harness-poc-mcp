@@ -410,11 +410,16 @@ export const pipelinesToolset: ToolsetDefinition = {
           method: "POST",
           path: "/pipeline/api/approvals/{approvalInstanceId}/harness/activity",
           pathParams: { approval_id: "approvalInstanceId" },
-          bodyBuilder: (input) => ({
-            action: "APPROVE",
-            comments: input.comments ?? "",
-            ...(input.approver_inputs ? { approverInputs: input.approver_inputs } : {}),
-          }),
+          bodyBuilder: (input) => {
+            const body = input.body as Record<string, unknown> | undefined;
+            const comments = input.comments ?? body?.comments ?? "";
+            const approverInputs = input.approver_inputs ?? body?.approver_inputs;
+            return {
+              action: "APPROVE",
+              comments,
+              ...(approverInputs ? { approverInputs } : {}),
+            };
+          },
           responseExtractor: ngExtract,
           actionDescription: "Approve a Harness approval instance. Requires approval_id. Optional: comments, approver_inputs (array of {name, value}).",
           bodySchema: {
@@ -429,10 +434,13 @@ export const pipelinesToolset: ToolsetDefinition = {
           method: "POST",
           path: "/pipeline/api/approvals/{approvalInstanceId}/harness/activity",
           pathParams: { approval_id: "approvalInstanceId" },
-          bodyBuilder: (input) => ({
-            action: "REJECT",
-            comments: input.comments ?? "",
-          }),
+          bodyBuilder: (input) => {
+            const body = input.body as Record<string, unknown> | undefined;
+            return {
+              action: "REJECT",
+              comments: input.comments ?? body?.comments ?? "",
+            };
+          },
           responseExtractor: ngExtract,
           actionDescription: "Reject a Harness approval instance. Requires approval_id. Optional: comments.",
           bodySchema: {
