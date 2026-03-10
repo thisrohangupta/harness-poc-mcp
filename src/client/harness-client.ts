@@ -71,19 +71,14 @@ export class HarnessClient {
           ? AbortSignal.any([options.signal, timeoutController.signal])
           : timeoutController.signal;
 
-        const bodyString = options.body
-          ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body))
-          : undefined;
-
         log.debug(`${method} ${url}`);
-        if (bodyString) {
-          log.debug("Request body", { body: bodyString.slice(0, 1000) });
-        }
 
         const response = await fetch(url, {
           method,
           headers,
-          body: bodyString,
+          body: options.body
+            ? (typeof options.body === "string" ? options.body : JSON.stringify(options.body))
+            : undefined,
           signal,
         });
 
@@ -132,7 +127,6 @@ export class HarnessClient {
             parseErr,
           );
         }
-        log.debug("Response body", { body: text.slice(0, 1000) });
         return data as T;
       } catch (err) {
         if (err instanceof HarnessApiError) throw err;

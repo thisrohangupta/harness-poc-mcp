@@ -13,9 +13,7 @@ export const logsToolset: ToolsetDefinition = {
       toolset: "logs",
       scope: "project",
       identifierFields: ["prefix"],
-      listFilterFields: [
-        { name: "execution_id", description: "Execution identifier to fetch logs for" },
-      ],
+      listFilterFields: [],
       operations: {
         get: {
           method: "POST",
